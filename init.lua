@@ -84,35 +84,38 @@ minetest.register_on_leaveplayer(function(player)
 end)
 
 minetest.register_globalstep(function()
-	for _, player in ipairs(what_is_this_uwu.players) do
-		local meta = player:get_meta()
-		local pointed_thing = what_is_this_uwu.get_pointed_thing(player)
+    for _, player in ipairs(what_is_this_uwu.players) do
+        local meta = player:get_meta()
+        local pointed_thing = what_is_this_uwu.get_pointed_thing(player)
 
-		if pointed_thing then
-			local node = minetest.get_node(pointed_thing.under)
-			local node_name = node.name
-			local current_tool = player:get_wielded_item():get_name()
-			
-			if meta:get_string('wit:pointed_thing') ~= node_name or current_tool ~= what_is_this_uwu.prev_tool[player:get_player_name()] then
-				local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name, meta)
+        if not pointed_thing then
+            what_is_this_uwu.unshow(player, meta)
+            return
+        end
 
-				if not node_definition then
-					what_is_this_uwu.unshow(player, meta)
+        local node = minetest.get_node(pointed_thing.under)
+        local node_name = node.name
+        local current_tool = player:get_wielded_item():get_name()
 
-					return
-				end
+        if meta:get_string('wit:pointed_thing') == node_name and current_tool == what_is_this_uwu.prev_tool[player:get_player_name()] then
+            return
+        end
 
-				local node_description = what_is_this_uwu.destrange(node_definition.description)
-				local mod_name, _ = what_is_this_uwu.split_item_name(node_name)
+        local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name, meta)
 
-				what_is_this_uwu.prev_tool[player:get_player_name()] = current_tool
-				what_is_this_uwu.show(player, meta, form_view, node_description, node_name, item_type, mod_name)
-			end
-		else
-			what_is_this_uwu.unshow(player, meta)
-		end
-	end
+        if not node_definition then
+            what_is_this_uwu.unshow(player, meta)
+            return
+        end
+
+        local node_description = what_is_this_uwu.destrange(node_definition.description)
+        local mod_name, _ = what_is_this_uwu.split_item_name(node_name)
+
+        what_is_this_uwu.prev_tool[player:get_player_name()] = current_tool
+        what_is_this_uwu.show(player, meta, form_view, node_description, node_name, item_type, mod_name)
+    end
 end)
+
 
 minetest.register_chatcommand('wituwu', {
 	params = '',
