@@ -145,11 +145,18 @@ function what_is_this_uwu.get_node_tiles(node_name)
 	end
 
 	if node.groups["not_in_creative_inventory"] then
-		local drop = node.drop
+		drop = node.drop
 		if drop and type(drop) == "string" then
 			node_name = drop
-			node = minetest.registered_nodes[drop] or minetest.registered_craftitems[drop]
+			node = minetest.registered_nodes[drop]
+			if not node then
+				node = minetest.registered_craftitems[drop]
+			end
 		end
+	end
+
+	if not node or (not node.tiles and not node.inventory_image) then
+		return "ignore", "node", false
 	end
 
 	local tiles = node.tiles or {}
