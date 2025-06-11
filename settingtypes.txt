@@ -1,0 +1,5 @@
+#If true, also append the 'technical' itemname.
+what_is_this_uwu_itemname (Show technical itemname) bool false
+
+#Use this to change the multiplier for the font size of the wielded item name
+what_is_this_uwu_text_multiplier (Multiplier for text size calculations) float 1.0 1.0

@@ -1,9 +1,6 @@
 # What is this? UwU
 
 A mod that says at the top of your screen what you're looking at.
-Modified by kebabmaneater to be centered and have the tool shown.
-
-Also supports Extended Tooltips https://content.minetest.net/packages/Wuzzy/tt/
 
 ## Screenshots:
 
@@ -15,12 +12,13 @@ Also supports Extended Tooltips https://content.minetest.net/packages/Wuzzy/tt/
 
 ## Chatcommands
 
-To unshow thw pop-up, typed this in console:
+To unshow the pop-up, type this in console:
 
 ```
 /wituwu
 ```
 
-And typed again to show.
+Retype to show it again.
 
-Enjoy!
+## Credits
+Released by Kebabmaneater. Credits to Wuzzy for some of the code used in this project, such as the one used for getting the item description. Also credits to the original author of this project Rotfuchs-von-Vulpes.

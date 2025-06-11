@@ -66,6 +66,11 @@ local function string_to_pixels(str)
 	for char in str:gmatch(".") do
 		size = size + (char_width[char] or 14)
 	end
+	local mult = minetest.settings:get("what_is_this_uwu_text_multiplier", 1.0)
+	if mult then
+		size = math.ceil(size * mult)
+	end
+
 	return size
 end
 
@@ -89,30 +94,6 @@ function what_is_this_uwu.split_item_name(item_name)
 		table.insert(splited, char)
 	end
 	return splited[1], splited[2]
-end
-
-function what_is_this_uwu.destrange(str)
-	if not str:match("") then
-		return str
-	end
-
-	local reading = true
-	local between_parenthesis = false
-	local temp_str = ""
-
-	for char in str:gmatch(".") do
-		if char:match("") then
-			reading = false
-		elseif reading and not between_parenthesis then
-			temp_str = temp_str .. char
-		else
-			reading = true
-		end
-
-		between_parenthesis = char == "(" or (between_parenthesis and char ~= ")")
-	end
-
-	return temp_str
 end
 
 function what_is_this_uwu.register_player(player, name)
@@ -159,7 +140,7 @@ end
 
 function what_is_this_uwu.get_node_tiles(node_name)
 	local node = minetest.registered_nodes[node_name]
-	if not node or (not node.tiles and not node.inventory_image) then
+	if node == nil or (not node.tiles and not node.inventory_image) then
 		return "ignore", "node", false
 	end
 
@@ -177,7 +158,7 @@ function what_is_this_uwu.get_node_tiles(node_name)
 		return node.inventory_image .. "^[resize:146x146", "node", node
 	elseif node.inventory_image ~= "" then
 		return node.inventory_image .. "^[resize:16x16", "craft_item", node
-	else
+	elseif tiles then
 		tiles[3] = tiles[3] or tiles[1]
 		tiles[6] = tiles[6] or tiles[3]
 
@@ -204,10 +185,22 @@ end
 local function update_size(...)
 	local player, meta, form_view, node_description, node_name, item_type, mod_name = ...
 	local size
+	node_description =
+		core.get_translated_string(core.get_player_information(player:get_player_name()).lang_code, node_description)
+
+	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
+	if tech and node_description ~= "" then
+		node_description = node_description .. " [" .. node_name .. "]"
+	end
+
 	if #node_description >= #mod_name then
 		size = string_to_pixels(node_description) - 18
 	else
 		size = string_to_pixels(mod_name) - 18
+	end
+
+	if tech then
+		size = size - 32 --Haphazard fix, but eh
 	end
 
 	player:hud_change(meta:get_string("wit:background_middle"), "scale", { x = size / 16 + 1.5, y = 2 })
@@ -280,21 +273,58 @@ local function show_best_tool(player, meta, form_view, node_description, node_na
 	player:hud_change(meta:get_string("wit:image"), "text", form_view)
 end
 
-function what_is_this_uwu.show(player, meta, form_view, node_description, node_name, item_type, mod_name)
+local function get_first_line(text)
+	-- Cut off text after first newline
+	local firstnewline = string.find(text, "\n")
+	if firstnewline then
+		text = string.sub(text, 1, firstnewline - 1)
+	end
+	return text
+end
+
+function what_is_this_uwu.show(player, meta, form_view, node_name, item_type, mod_name)
 	if meta:get_string("wit:pointed_thing") == "ignore" then
 		what_is_this_uwu.show_background(player, meta)
 	end
 
 	meta:set_string("wit:pointed_thing", node_name)
 
-	if minetest.registered_items[node_name]._tt_original_description then
-		node_description = what_is_this_uwu.destrange(minetest.registered_items[node_name]._tt_original_description)
+	local wstack = ItemStack(node_name)
+	local def = minetest.registered_items[node_name]
+	local desc
+	if wstack.get_short_description then
+		-- get_short_description()
+		desc = wstack:get_short_description()
+	end
+	if (not desc or desc == "") and wstack.get_description then
+		-- get_description()
+		desc = wstack:get_description()
+		desc = get_first_line(desc)
+	end
+	if (not desc or desc == "") and not wstack.get_description then
+		-- Metadata (old versions only)
+		local meta = wstack:get_meta()
+		desc = meta:get_string("description")
+		desc = get_first_line(desc)
+	end
+	if not desc or desc == "" then
+		-- Item definition
+		desc = def.description
+		desc = get_first_line(desc)
+	end
+	if not desc or desc == "" then
+		-- Final fallback: itemstring
+		desc = node_name
 	end
 
-	update_size(player, meta, form_view, node_description, node_name, item_type, mod_name)
-	show_best_tool(player, meta, form_view, node_description, node_name, item_type, mod_name)
+	update_size(player, meta, form_view, desc, node_name, item_type, mod_name)
+	show_best_tool(player, meta, form_view, desc, node_name, item_type, mod_name)
 
-	player:hud_change(meta:get_string("wit:name"), "text", node_description)
+	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
+	if tech and desc ~= "" then
+		desc = desc .. " [" .. node_name .. "]"
+	end
+	player:hud_change(meta:get_string("wit:name"), "text", desc)
 	player:hud_change(meta:get_string("wit:mod"), "text", mod_name)
 
 	local scale = { x = 0.3, y = 0.3 }
