@@ -106,9 +106,6 @@ local function show(player, skip)
 		local node_name = node.name
 		local current_tool = player:get_wielded_item():get_name()
 
-		if hud.pointed_thing ~= node_name then
-			what_is_this_uwu.possible_tool_index[pname] = 1
-		end
 		if hud.pointed_thing == node_name and current_tool == what_is_this_uwu.prev_tool[pname] and not skip then
 			return
 		end
