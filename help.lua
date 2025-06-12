@@ -2,6 +2,9 @@ local what_is_this_uwu = {
 	prev_tool = {},
 	huds = {},
 	show_table = {},
+	possible_tools = {},
+	possible_tool_index = {},
+	dtimes = {},
 }
 
 local char_width = {
@@ -121,6 +124,7 @@ function what_is_this_uwu.get_node_tiles(node_name)
 		return "ignore", "node", false
 	end
 
+	local initial_node = node
 	if node.groups["not_in_creative_inventory"] then
 		drop = node.drop
 		if drop and type(drop) == "string" then
@@ -128,6 +132,9 @@ function what_is_this_uwu.get_node_tiles(node_name)
 			node = minetest.registered_nodes[drop]
 			if not node then
 				node = minetest.registered_craftitems[drop]
+			end
+			if not node then
+				node = initial_node
 			end
 		end
 	end
@@ -208,30 +215,22 @@ local function update_size(...)
 end
 
 local function show_best_tool(player, form_view, node_name)
-	local index_to_image = {
-		"wit_hand.png",
-		"wit_spade.png",
-		"wit_pickaxe.png",
-		"wit_hand.png",
-		"wit_axe.png",
-		"wit_sword.png",
-		"wit_hand.png",
-	}
-
-	local tool_group_names = { "pickaxe", "shovel", "sword", "axe" }
-	local group_index = -1
-
+	local name = player:get_player_name()
 	local item_def = minetest.registered_items[node_name]
 	local groups = item_def.groups
 
-	for index, group in ipairs({ "dig_immediate", "crumbly", "cracky", "snappy", "choppy", "fleshy", "explody" }) do
-		if groups[group] then
-			group_index = index
-			break
+	what_is_this_uwu.possible_tools[name] = {}
+	for toolname, tooldef in pairs(minetest.registered_tools) do
+		if tooldef.tool_capabilities then
+			for group, _ in pairs(groups) do
+				if tooldef.tool_capabilities.groupcaps then
+					if tooldef.tool_capabilities.groupcaps[group] then
+						table.insert(what_is_this_uwu.possible_tools[name], toolname)
+					end
+				end
+			end
 		end
 	end
-
-	local best_to_mine = index_to_image[group_index] or "wit_hand.png"
 
 	local wielded_item = player:get_wielded_item()
 	local item_name = wielded_item:get_name()
@@ -239,31 +238,48 @@ local function show_best_tool(player, form_view, node_name)
 	local correct_tool_in_hand = false
 	local liquids = { "default:water_source", "default:river_water_source", "default:lava_source" }
 	if table.concat(liquids, ","):find(node_name) then
-		best_to_mine = "wit_bucket.png"
+		what_is_this_uwu.possible_tools[name] = { "bucket:bucket_empty" }
 		correct_tool_in_hand = (item_name == "bucket:bucket_empty")
 	else
-		local show_hand = true
+		for _, tool in ipairs(what_is_this_uwu.possible_tools[name]) do
+			if item_name == tool then
+				correct_tool_in_hand = true
+				break
+			end
 
-		for _, tool_group in ipairs(tool_group_names) do
-			if minetest.get_item_group(item_name, tool_group) > 0 then
-				correct_tool_in_hand = (group_index == ({ 3, 2, 6, 5 })[_])
-				show_hand = false
+			if not correct_tool_in_hand and hand_possible then
+				correct_tool_in_hand = true
 				break
 			end
 		end
-
-		if (group_index ~= 3 and group_index ~= 2 and group_index ~= 6 and group_index ~= 5) and show_hand then
-			correct_tool_in_hand = true
-		end
 	end
 
-	local name = player:get_player_name()
-	player:hud_change(what_is_this_uwu.huds[name].best_tool, "text", best_to_mine)
-	player:hud_change(
-		what_is_this_uwu.huds[name].tool_in_hand,
-		"text",
-		correct_tool_in_hand and "wit_checkmark.png" or "wit_nope.png"
-	)
+	local tool = what_is_this_uwu.possible_tools[name][what_is_this_uwu.possible_tool_index[name]]
+	local texture = nil
+	if minetest.registered_tools[tool] then
+		if minetest.registered_tools[tool].inventory_image then
+			texture = minetest.registered_tools[tool].inventory_image
+		end
+	end
+	if texture == nil and minetest.registered_craftitems[tool] then
+		if minetest.registered_craftitems[tool].inventory_image then
+			texture = minetest.registered_craftitems[tool].inventory_image
+		end
+	end
+	if texture == nil then
+		texture = "wit_not_found.png"
+	end
+
+	player:hud_change(what_is_this_uwu.huds[name].best_tool, "text", texture)
+	if texture == "wit_not_found.png" then
+		player:hud_change(what_is_this_uwu.huds[name].tool_in_hand, "text", "")
+	else
+		player:hud_change(
+			what_is_this_uwu.huds[name].tool_in_hand,
+			"text",
+			correct_tool_in_hand and "wit_checkmark.png" or "wit_nope.png"
+		)
+	end
 	player:hud_change(what_is_this_uwu.huds[name].image, "text", form_view)
 end
 

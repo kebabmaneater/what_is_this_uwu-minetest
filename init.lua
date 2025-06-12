@@ -76,6 +76,9 @@ local function create_hud(player)
 	}
 	what_is_this_uwu.huds[pname] = hud
 	what_is_this_uwu.show_table[pname] = true
+	what_is_this_uwu.possible_tools[pname] = {}
+	what_is_this_uwu.possible_tool_index[pname] = 1
+	what_is_this_uwu.dtimes[pname] = 0
 end
 
 local function remove_player(player)
@@ -83,16 +86,36 @@ local function remove_player(player)
 	what_is_this_uwu.huds[pname] = nil
 	what_is_this_uwu.prev_tool[pname] = nil
 	what_is_this_uwu.show_table[pname] = nil
+	what_is_this_uwu.possible_tools[pname] = nil
+	what_is_this_uwu.possible_tool_index[pname] = nil
+	what_is_this_uwu.dtimes[pname] = nil
 end
 
 minetest.register_on_joinplayer(create_hud)
 minetest.register_on_leaveplayer(remove_player)
 
-minetest.register_globalstep(function()
+minetest.register_globalstep(function(dtime)
 	for _, player in pairs(minetest.get_connected_players()) do
 		local pname = player:get_player_name()
 		local hud = what_is_this_uwu.huds[pname]
 		local pointed_thing = what_is_this_uwu.get_pointed_thing(player)
+
+		local dtimes = what_is_this_uwu.dtimes
+		local possible_tools = what_is_this_uwu.possible_tools
+		local possible_tools_index = what_is_this_uwu.possible_tool_index
+
+		local changed = false
+		if dtimes[pname] < 1 then
+			dtimes[pname] = dtimes[pname] + dtime
+			if dtimes[pname] > 1 then
+				dtimes[pname] = 0
+				possible_tools_index[pname] = possible_tools_index[pname] + 1
+				if possible_tools_index[pname] > #possible_tools[pname] then
+					possible_tools_index[pname] = 1
+				end
+				changed = true
+			end
+		end
 
 		if not pointed_thing or not hud then
 			what_is_this_uwu.unshow(player)
@@ -101,7 +124,7 @@ minetest.register_globalstep(function()
 			local node_name = node.name
 			local current_tool = player:get_wielded_item():get_name()
 
-			if hud.pointed_thing == node_name and current_tool == what_is_this_uwu.prev_tool[pname] then
+			if hud.pointed_thing == node_name and current_tool == what_is_this_uwu.prev_tool[pname] and not changed then
 				goto continue
 			end
 
