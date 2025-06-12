@@ -94,51 +94,59 @@ end
 minetest.register_on_joinplayer(create_hud)
 minetest.register_on_leaveplayer(remove_player)
 
+local function show(player, skip)
+	local pname = player:get_player_name()
+
+	local pointed_thing = what_is_this_uwu.get_pointed_thing(player)
+	local hud = what_is_this_uwu.huds[pname]
+	if not pointed_thing or not hud then
+		what_is_this_uwu.unshow(player)
+	else
+		local node = minetest.get_node(pointed_thing.under)
+		local node_name = node.name
+		local current_tool = player:get_wielded_item():get_name()
+
+		if hud.pointed_thing ~= node_name then
+			what_is_this_uwu.possible_tool_index[pname] = 1
+		end
+		if hud.pointed_thing == node_name and current_tool == what_is_this_uwu.prev_tool[pname] and not skip then
+			return
+		end
+
+		local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name)
+		if not node_definition then
+			what_is_this_uwu.unshow(player)
+			return
+		end
+
+		local mod_name = what_is_this_uwu.split_item_name(node_name)
+		what_is_this_uwu.prev_tool[pname] = current_tool
+		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name)
+	end
+end
+
 minetest.register_globalstep(function(dtime)
 	for _, player in pairs(minetest.get_connected_players()) do
 		local pname = player:get_player_name()
-		local hud = what_is_this_uwu.huds[pname]
-		local pointed_thing = what_is_this_uwu.get_pointed_thing(player)
 
 		local dtimes = what_is_this_uwu.dtimes
 		local possible_tools = what_is_this_uwu.possible_tools
 		local possible_tools_index = what_is_this_uwu.possible_tool_index
 
-		local changed = false
-		if dtimes[pname] < 1 then
+		local change = minetest.settings:get("what_is_this_uwu_text_multiplier", 1.0) or 1
+		if dtimes[pname] < change then
 			dtimes[pname] = dtimes[pname] + dtime
-			if dtimes[pname] > 1 then
-				dtimes[pname] = 0
+			if dtimes[pname] >= change then
+				dtimes[pname] = dtimes[pname] - change
 				possible_tools_index[pname] = possible_tools_index[pname] + 1
 				if possible_tools_index[pname] > #possible_tools[pname] then
 					possible_tools_index[pname] = 1
 				end
-				changed = true
+				show(player, true)
 			end
 		end
 
-		if not pointed_thing or not hud then
-			what_is_this_uwu.unshow(player)
-		else
-			local node = minetest.get_node(pointed_thing.under)
-			local node_name = node.name
-			local current_tool = player:get_wielded_item():get_name()
-
-			if hud.pointed_thing == node_name and current_tool == what_is_this_uwu.prev_tool[pname] and not changed then
-				goto continue
-			end
-
-			local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name)
-			if not node_definition then
-				what_is_this_uwu.unshow(player)
-				goto continue
-			end
-
-			local mod_name = what_is_this_uwu.split_item_name(node_name)
-			what_is_this_uwu.prev_tool[pname] = current_tool
-			what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name)
-		end
-		::continue::
+		show(player, false)
 	end
 end)
 
