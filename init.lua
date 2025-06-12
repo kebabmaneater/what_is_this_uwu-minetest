@@ -133,7 +133,9 @@ minetest.register_globalstep(function(dtime)
 		local possible_tools = what_is_this_uwu.possible_tools
 		local possible_tools_index = what_is_this_uwu.possible_tool_index
 
-		local change = minetest.settings:get("what_is_this_uwu_text_multiplier", 1.0) or 1
+		local change = minetest.settings:get("what_is_this_uwu_rate_of_change", 1.0) or 1.0
+		change = tonumber(change)
+
 		if dtimes[pname] < change then
 			dtimes[pname] = dtimes[pname] + dtime
 			if dtimes[pname] >= change then
