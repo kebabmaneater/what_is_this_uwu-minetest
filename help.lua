@@ -1,7 +1,7 @@
 local what_is_this_uwu = {
-	players = {},
-	players_set = {},
 	prev_tool = {},
+	huds = {},
+	show_table = {},
 }
 
 local char_width = {
@@ -66,10 +66,6 @@ local function string_to_pixels(str)
 	for char in str:gmatch(".") do
 		size = size + (char_width[char] or 14)
 	end
-	local mult = minetest.settings:get("what_is_this_uwu_text_multiplier", 1.0)
-	if mult then
-		size = math.ceil(size * mult)
-	end
 
 	return size
 end
@@ -96,33 +92,14 @@ function what_is_this_uwu.split_item_name(item_name)
 	return splited[1], splited[2]
 end
 
-function what_is_this_uwu.register_player(player, name)
-	if what_is_this_uwu.players_set[name] then
-		return
-	end
-
-	table.insert(what_is_this_uwu.players, player)
-	what_is_this_uwu.players_set[name] = true
-end
-
-function what_is_this_uwu.remove_player(name)
-	if not what_is_this_uwu.players_set[name] then
-		return
-	end
-
-	what_is_this_uwu.players_set[name] = false
-
-	for i, player in ipairs(what_is_this_uwu.players) do
-		if player == name then
-			table.remove(what_is_this_uwu.players, i)
-			break
-		end
-	end
+function what_is_this_uwu.toggle_show(name)
+	what_is_this_uwu.show_table[name] = not what_is_this_uwu.show_table[name]
+	what_is_this_uwu.unshow(minetest.get_player_by_name(name))
 end
 
 function what_is_this_uwu.get_pointed_thing(player)
 	local playerName = player:get_player_name()
-	if not what_is_this_uwu.players_set[playerName] then
+	if what_is_this_uwu.show_table[playerName] == false then
 		return
 	end
 
@@ -183,14 +160,15 @@ function what_is_this_uwu.get_node_tiles(node_name)
 	end
 end
 
-function what_is_this_uwu.show_background(player, meta)
-	player:hud_change(meta:get_string("wit:background_left"), "text", "wit_left_side.png")
-	player:hud_change(meta:get_string("wit:background_middle"), "text", "wit_middle.png")
-	player:hud_change(meta:get_string("wit:background_right"), "text", "wit_right_side.png")
+function what_is_this_uwu.show_background(player)
+	local name = player:get_player_name()
+	player:hud_change(what_is_this_uwu.huds[name].background_left, "text", "wit_left_side.png")
+	player:hud_change(what_is_this_uwu.huds[name].background_middle, "text", "wit_middle.png")
+	player:hud_change(what_is_this_uwu.huds[name].background_right, "text", "wit_right_side.png")
 end
 
 local function update_size(...)
-	local player, meta, form_view, node_description, node_name, item_type, mod_name = ...
+	local player, node_description, node_name, mod_name = ...
 	local size
 	node_description =
 		core.get_translated_string(core.get_player_information(player:get_player_name()).lang_code, node_description)
@@ -200,28 +178,36 @@ local function update_size(...)
 		node_description = node_description .. " [" .. node_name .. "]"
 	end
 
-	if #node_description >= #mod_name then
-		size = string_to_pixels(node_description) - 18
-	else
-		size = string_to_pixels(mod_name) - 18
+	local str = (#node_description >= #mod_name) and node_description or mod_name
+	size = string_to_pixels(str)
+
+	local mult = minetest.settings:get("what_is_this_uwu_text_multiplier", 1.0)
+	if mult then
+		size = math.ceil(size * mult)
 	end
 
+	if size % 2 ~= 0 then
+		size = size + 1 -- Make sure size is even
+	end
+
+	size = size - 18
 	if tech then
 		size = size - 32 --Haphazard fix, but eh
 	end
 
-	player:hud_change(meta:get_string("wit:background_middle"), "scale", { x = size / 16 + 1.5, y = 2 })
-	player:hud_change(meta:get_string("wit:background_middle"), "offset", { x = -size / 2 - 9.5, y = 35 })
-	player:hud_change(meta:get_string("wit:background_right"), "offset", { x = size / 2 + 30, y = 35 })
-	player:hud_change(meta:get_string("wit:background_left"), "offset", { x = -size / 2 - 25, y = 35 })
-	player:hud_change(meta:get_string("wit:image"), "offset", { x = -size / 2 - 12.5, y = 35 })
-	player:hud_change(meta:get_string("wit:name"), "offset", { x = -size / 2 + 16.5, y = 22 })
-	player:hud_change(meta:get_string("wit:mod"), "offset", { x = -size / 2 + 16.5, y = 37 })
-	player:hud_change(meta:get_string("wit:best_tool"), "offset", { x = -size / 2 + 16.5, y = 51 })
-	player:hud_change(meta:get_string("wit:tool_in_hand"), "offset", { x = -size / 2 + 16.5, y = 51 })
+	local name = player:get_player_name()
+	player:hud_change(what_is_this_uwu.huds[name].background_middle, "scale", { x = size / 16 + 1.5, y = 2 })
+	player:hud_change(what_is_this_uwu.huds[name].background_middle, "offset", { x = -size / 2 - 9.5, y = 35 })
+	player:hud_change(what_is_this_uwu.huds[name].background_right, "offset", { x = size / 2 + 31, y = 35 })
+	player:hud_change(what_is_this_uwu.huds[name].background_left, "offset", { x = -size / 2 - 25, y = 35 })
+	player:hud_change(what_is_this_uwu.huds[name].image, "offset", { x = -size / 2 - 12.5, y = 35 })
+	player:hud_change(what_is_this_uwu.huds[name].name, "offset", { x = -size / 2 + 16.5, y = 22 })
+	player:hud_change(what_is_this_uwu.huds[name].mod, "offset", { x = -size / 2 + 16.5, y = 37 })
+	player:hud_change(what_is_this_uwu.huds[name].best_tool, "offset", { x = -size / 2 + 16.5, y = 51 })
+	player:hud_change(what_is_this_uwu.huds[name].tool_in_hand, "offset", { x = -size / 2 + 16.5, y = 51 })
 end
 
-local function show_best_tool(player, meta, form_view, node_description, node_name, item_type, mod_name)
+local function show_best_tool(player, form_view, node_name)
 	local index_to_image = {
 		"wit_hand.png",
 		"wit_spade.png",
@@ -271,17 +257,17 @@ local function show_best_tool(player, meta, form_view, node_description, node_na
 		end
 	end
 
-	player:hud_change(meta:get_string("wit:best_tool"), "text", best_to_mine)
+	local name = player:get_player_name()
+	player:hud_change(what_is_this_uwu.huds[name].best_tool, "text", best_to_mine)
 	player:hud_change(
-		meta:get_string("wit:tool_in_hand"),
+		what_is_this_uwu.huds[name].tool_in_hand,
 		"text",
 		correct_tool_in_hand and "wit_checkmark.png" or "wit_nope.png"
 	)
-	player:hud_change(meta:get_string("wit:image"), "text", form_view)
+	player:hud_change(what_is_this_uwu.huds[name].image, "text", form_view)
 end
 
 local function get_first_line(text)
-	-- Cut off text after first newline
 	local firstnewline = string.find(text, "\n")
 	if firstnewline then
 		text = string.sub(text, 1, firstnewline - 1)
@@ -289,79 +275,77 @@ local function get_first_line(text)
 	return text
 end
 
-function what_is_this_uwu.show(player, meta, form_view, node_name, item_type, mod_name)
-	if meta:get_string("wit:pointed_thing") == "ignore" then
-		what_is_this_uwu.show_background(player, meta)
-	end
-
-	meta:set_string("wit:pointed_thing", node_name)
-
+local function get_desc_from_name(node_name)
 	local wstack = ItemStack(node_name)
 	local def = minetest.registered_items[node_name]
 	local desc
 	if wstack.get_short_description then
-		-- get_short_description()
 		desc = wstack:get_short_description()
 	end
 	if (not desc or desc == "") and wstack.get_description then
-		-- get_description()
 		desc = wstack:get_description()
 		desc = get_first_line(desc)
 	end
 	if (not desc or desc == "") and not wstack.get_description then
-		-- Metadata (old versions only)
 		local meta = wstack:get_meta()
 		desc = meta:get_string("description")
 		desc = get_first_line(desc)
 	end
 	if not desc or desc == "" then
-		-- Item definition
 		desc = def.description
 		desc = get_first_line(desc)
 	end
 	if not desc or desc == "" then
-		-- Final fallback: itemstring
 		desc = node_name
 	end
+	return desc
+end
 
-	update_size(player, meta, form_view, desc, node_name, item_type, mod_name)
-	show_best_tool(player, meta, form_view, desc, node_name, item_type, mod_name)
+function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name)
+	local name = player:get_player_name()
+	if what_is_this_uwu.huds[name].pointed_thing == "ignore" then
+		what_is_this_uwu.show_background(player)
+	end
+
+	what_is_this_uwu.huds[name].pointed_thing = node_name
+
+	local desc = get_desc_from_name(node_name)
+
+	update_size(player, desc, node_name, mod_name)
+	show_best_tool(player, form_view, node_name)
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
 	if tech and desc ~= "" then
 		desc = desc .. " [" .. node_name .. "]"
 	end
-	player:hud_change(meta:get_string("wit:name"), "text", desc)
-	player:hud_change(meta:get_string("wit:mod"), "text", mod_name)
+	player:hud_change(what_is_this_uwu.huds[name].name, "text", desc)
+	player:hud_change(what_is_this_uwu.huds[name].mod, "text", mod_name)
 
 	local scale = { x = 0.3, y = 0.3 }
 	if item_type ~= "node" then
 		scale = { x = 2.5, y = 2.5 }
 	end
 
-	meta:set_string("wit:item_type_in_pointer", item_type)
-	player:hud_change(meta:get_string("wit:image"), "scale", scale)
+	player:hud_change(what_is_this_uwu.huds[name].image, "scale", scale)
 end
 
-function what_is_this_uwu.unshow(player, meta)
-	if not meta then
+function what_is_this_uwu.unshow(player)
+	if not player then
 		return
 	end
-	meta:set_string("wit:pointed_thing", "ignore")
 
-	local hud_elements = {
-		"wit:background_left",
-		"wit:background_middle",
-		"wit:background_right",
-		"wit:image",
-		"wit:name",
-		"wit:mod",
-		"wit:best_tool",
-		"wit:tool_in_hand",
-	}
+	local name = player:get_player_name()
+	local hud = what_is_this_uwu.huds[name]
+	if not hud then
+		return
+	end
 
-	for _, element in ipairs(hud_elements) do
-		player:hud_change(meta:get_string(element), "text", "")
+	hud.pointed_thing = "ignore"
+
+	for _, element in pairs(hud) do
+		if type(element) == "number" then
+			player:hud_change(element, "text", "")
+		end
 	end
 end
 

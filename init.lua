@@ -1,120 +1,121 @@
+local minetest = minetest
 local what_is_this_uwu = dofile(minetest.get_modpath("what_is_this_uwu") .. "/help.lua")
 
-minetest.register_on_joinplayer(function(player)
-	local meta = player:get_meta()
+local hud_type_field_name
+if minetest.features.hud_def_type_field then
+	-- Minetest 5.9.0 and later
+	hud_type_field_name = "type"
+else
+	-- All Minetest versions before 5.9.0
+	hud_type_field_name = "hud_elem_type"
+end
 
-	local background_id_left = player:hud_add({
-		hud_elem_type = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 2, y = 2 },
-		text = "",
-		offset = { x = -50, y = 35 },
-	})
-	local background_id_middle = player:hud_add({
-		hud_elem_type = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 2, y = 2 },
-		text = "",
-		alignment = { x = 1 },
-		offset = { x = -37.5, y = 35 },
-	})
-	local background_id_right = player:hud_add({
-		hud_elem_type = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 2, y = 2 },
-		text = "",
-		offset = { x = 0, y = 35 },
-	})
+local function create_hud(player)
+	local pname = player:get_player_name()
+	local hud = {
+		background_left = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 2, y = 2 },
+			text = "",
+			offset = { x = -50, y = 35 },
+		}),
+		background_middle = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 2, y = 2 },
+			text = "",
+			alignment = { x = 1 },
+			offset = { x = -37.5, y = 35 },
+		}),
+		background_right = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 2, y = 2 },
+			text = "",
+			offset = { x = 0, y = 35 },
+		}),
+		image = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 0.3, y = 0.3 },
+			offset = { x = -35, y = 35 },
+		}),
+		name = player:hud_add({
+			[hud_type_field_name] = "text",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 0.3, y = 0.3 },
+			number = 0xffffff,
+			alignment = { x = 1 },
+			offset = { x = 0, y = 22 },
+		}),
+		mod = player:hud_add({
+			[hud_type_field_name] = "text",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 0.3, y = 0.3 },
+			number = 0xff3c0a,
+			alignment = { x = 1 },
+			offset = { x = 0, y = 37 },
+			style = 2,
+		}),
+		best_tool = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 1, y = 1 },
+			alignment = { x = 1, y = 0 },
+			offset = { x = 0, y = 51 },
+		}),
+		tool_in_hand = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 1, y = 1 },
+			alignment = { x = 1, y = 0 },
+			offset = { x = 0, y = 51 },
+		}),
+		pointed_thing = "ignore",
+	}
+	what_is_this_uwu.huds[pname] = hud
+	what_is_this_uwu.show_table[pname] = true
+end
 
-	local image_id = player:hud_add({
-		hud_elem_type = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 0.3, y = 0.3 },
-		offset = { x = -35, y = 35 },
-	})
-	local name_id = player:hud_add({
-		hud_elem_type = "text",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 0.3, y = 0.3 },
-		number = 0xffffff,
-		alignment = { x = 1 },
-		offset = { x = 0, y = 22 },
-	})
+local function remove_player(player)
+	local pname = player:get_player_name()
+	what_is_this_uwu.huds[pname] = nil
+	what_is_this_uwu.prev_tool[pname] = nil
+	what_is_this_uwu.show_table[pname] = nil
+end
 
-	local mod_id = player:hud_add({
-		hud_elem_type = "text",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 0.3, y = 0.3 },
-		number = 0xff3c0a,
-		alignment = { x = 1 },
-		offset = { x = 0, y = 37 },
-		style = 2,
-	})
-	local best_tool = player:hud_add({
-		hud_elem_type = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 1, y = 1 },
-		alignment = { x = 1, y = 0 },
-		offset = { x = 0, y = 51 },
-	})
-	local tool_in_hand = player:hud_add({
-		hud_elem_type = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 1, y = 1 },
-		alignment = { x = 1, y = 0 },
-		offset = { x = 0, y = 51 },
-	})
-
-	meta:set_string("wit:background_left", background_id_left)
-	meta:set_string("wit:background_middle", background_id_middle)
-	meta:set_string("wit:background_right", background_id_right)
-	meta:set_string("wit:image", image_id)
-	meta:set_string("wit:name", name_id)
-	meta:set_string("wit:mod", mod_id)
-	meta:set_string("wit:best_tool", best_tool)
-	meta:set_string("wit:tool_in_hand", tool_in_hand)
-	meta:set_string("wit:pointed_thing", "ignore")
-	meta:set_string("wit:item_type_in_pointer", "node")
-
-	what_is_this_uwu.register_player(player, player:get_player_name())
-end)
-
-minetest.register_on_leaveplayer(function(player)
-	what_is_this_uwu.remove_player(player, player:get_player_name())
-end)
+minetest.register_on_joinplayer(create_hud)
+minetest.register_on_leaveplayer(remove_player)
 
 minetest.register_globalstep(function()
-	for _, player in ipairs(what_is_this_uwu.players) do
-		local meta = player:get_meta()
+	for _, player in pairs(minetest.get_connected_players()) do
+		local pname = player:get_player_name()
+		local hud = what_is_this_uwu.huds[pname]
 		local pointed_thing = what_is_this_uwu.get_pointed_thing(player)
 
-		if not pointed_thing then
-			what_is_this_uwu.unshow(player, meta)
-			return
+		if not pointed_thing or not hud then
+			what_is_this_uwu.unshow(player)
+		else
+			local node = minetest.get_node(pointed_thing.under)
+			local node_name = node.name
+			local current_tool = player:get_wielded_item():get_name()
+
+			if hud.pointed_thing == node_name and current_tool == what_is_this_uwu.prev_tool[pname] then
+				goto continue
+			end
+
+			local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name)
+			if not node_definition then
+				what_is_this_uwu.unshow(player)
+				goto continue
+			end
+
+			local mod_name = what_is_this_uwu.split_item_name(node_name)
+			what_is_this_uwu.prev_tool[pname] = current_tool
+			what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name)
 		end
-
-		local node = minetest.get_node(pointed_thing.under)
-		local node_name = node.name
-		local current_tool = player:get_wielded_item():get_name()
-
-		if
-			meta:get_string("wit:pointed_thing") == node_name
-			and current_tool == what_is_this_uwu.prev_tool[player:get_player_name()]
-		then
-			return
-		end
-
-		local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name, meta)
-
-		if not node_definition then
-			what_is_this_uwu.unshow(player, meta)
-			return
-		end
-
-		local mod_name, _ = what_is_this_uwu.split_item_name(node_name)
-
-		what_is_this_uwu.prev_tool[player:get_player_name()] = current_tool
-		what_is_this_uwu.show(player, meta, form_view, node_name, item_type, mod_name)
+		::continue::
 	end
 end)
 
@@ -122,15 +123,7 @@ minetest.register_chatcommand("wituwu", {
 	params = "",
 	description = "Show and unshow the wituwu pop-up",
 	func = function(name)
-		local player = minetest.get_player_by_name(name)
-
-		if what_is_this_uwu.players_set[name] then
-			what_is_this_uwu.remove_player(name)
-			what_is_this_uwu.unshow(player, player:get_meta())
-		else
-			what_is_this_uwu.register_player(player, name)
-		end
-
+		what_is_this_uwu.toggle_show(name)
 		return true, "Option flipped"
 	end,
 })
