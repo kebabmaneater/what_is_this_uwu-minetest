@@ -278,7 +278,7 @@ local function get_first_line(text)
 	return text
 end
 
-local function get_desc_from_name(node_name)
+local function get_desc_from_name(node_name, mod_name)
 	local wstack = ItemStack(node_name)
 	local def = minetest.registered_items[node_name]
 
@@ -288,20 +288,23 @@ local function get_desc_from_name(node_name)
 	end
 	if (not desc or desc == "") and wstack.get_description then
 		desc = wstack:get_description()
-		desc = get_first_line(desc)
 	end
 	if (not desc or desc == "") and not wstack.get_description then
 		local meta = wstack:get_meta()
 		desc = meta:get_string("description")
-		desc = get_first_line(desc)
 	end
 	if not desc or desc == "" then
 		desc = def.description
-		desc = get_first_line(desc)
 	end
 	if not desc or desc == "" then
 		desc = node_name
 	end
+	desc = get_first_line(desc)
+
+	if mod_name == "pipeworks" then
+		desc = desc:gsub("%{$", "") --very hacky fix for pipeworks
+	end
+
 	return desc
 end
 
@@ -313,7 +316,7 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 
 	what_is_this_uwu.huds[name].pointed_thing = node_name
 
-	local desc = get_desc_from_name(node_name, pos)
+	local desc = get_desc_from_name(node_name, mod_name)
 
 	update_size(player, desc, node_name, mod_name)
 	show_best_tool(player, form_view, node_name)
