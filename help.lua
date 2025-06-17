@@ -1,7 +1,6 @@
 local what_is_this_uwu = {
 	prev_tool = {},
 	huds = {},
-	show_table = {},
 	possible_tools = {},
 	possible_tool_index = {},
 	dtimes = {},
@@ -96,13 +95,15 @@ function what_is_this_uwu.split_item_name(item_name)
 end
 
 function what_is_this_uwu.toggle_show(name)
-	what_is_this_uwu.show_table[name] = not what_is_this_uwu.show_table[name]
+	local hud = what_is_this_uwu.huds[name]
+	hud.hidden = not hud.hidden
 	what_is_this_uwu.unshow(minetest.get_player_by_name(name))
 end
 
 function what_is_this_uwu.get_pointed_thing(player)
 	local playerName = player:get_player_name()
-	if what_is_this_uwu.show_table[playerName] == false then
+	local hud = what_is_this_uwu.huds[playerName]
+	if hud.hidden == true then
 		return
 	end
 
@@ -126,7 +127,7 @@ function what_is_this_uwu.get_node_tiles(node_name)
 
 	local initial_node = node
 	if node.groups["not_in_creative_inventory"] then
-		drop = node.drop
+		local drop = node.drop
 		if drop and type(drop) == "string" then
 			node_name = drop
 			node = minetest.registered_nodes[drop]
@@ -169,9 +170,8 @@ end
 
 function what_is_this_uwu.show_background(player)
 	local name = player:get_player_name()
-	player:hud_change(what_is_this_uwu.huds[name].background_left, "text", "wit_left_side.png")
-	player:hud_change(what_is_this_uwu.huds[name].background_middle, "text", "wit_middle.png")
-	player:hud_change(what_is_this_uwu.huds[name].background_right, "text", "wit_right_side.png")
+	local hud = what_is_this_uwu.huds[name]
+	hud:show()
 end
 
 local function update_size(...)
@@ -202,16 +202,8 @@ local function update_size(...)
 		size = size - 32 --Haphazard fix, but eh
 	end
 
-	local name = player:get_player_name()
-	player:hud_change(what_is_this_uwu.huds[name].background_middle, "scale", { x = size / 16 + 1.5, y = 2 })
-	player:hud_change(what_is_this_uwu.huds[name].background_middle, "offset", { x = -size / 2 - 9.5, y = 35 })
-	player:hud_change(what_is_this_uwu.huds[name].background_right, "offset", { x = size / 2 + 31, y = 35 })
-	player:hud_change(what_is_this_uwu.huds[name].background_left, "offset", { x = -size / 2 - 25, y = 35 })
-	player:hud_change(what_is_this_uwu.huds[name].image, "offset", { x = -size / 2 - 12.5, y = 35 })
-	player:hud_change(what_is_this_uwu.huds[name].name, "offset", { x = -size / 2 + 16.5, y = 22 })
-	player:hud_change(what_is_this_uwu.huds[name].mod, "offset", { x = -size / 2 + 16.5, y = 37 })
-	player:hud_change(what_is_this_uwu.huds[name].best_tool, "offset", { x = -size / 2 + 16.5, y = 51 })
-	player:hud_change(what_is_this_uwu.huds[name].tool_in_hand, "offset", { x = -size / 2 + 16.5, y = 51 })
+	local hud = what_is_this_uwu.huds[player:get_player_name()]
+	hud:size(size)
 end
 
 local function show_best_tool(player, form_view, node_name)
@@ -246,32 +238,27 @@ local function show_best_tool(player, form_view, node_name)
 				correct_tool_in_hand = true
 				break
 			end
-
-			if not correct_tool_in_hand and hand_possible then
-				correct_tool_in_hand = true
-				break
-			end
 		end
 	end
 
 	local tool = what_is_this_uwu.possible_tools[name][what_is_this_uwu.possible_tool_index[name]]
-	local texture = nil
+	if tool == nil then
+		tool = what_is_this_uwu.possible_tools[name][1]
+	end
+	local texture = ""
 	if minetest.registered_tools[tool] then
 		if minetest.registered_tools[tool].inventory_image then
 			texture = minetest.registered_tools[tool].inventory_image
 		end
 	end
-	if texture == nil and minetest.registered_craftitems[tool] then
+	if texture == "" and minetest.registered_craftitems[tool] then
 		if minetest.registered_craftitems[tool].inventory_image then
 			texture = minetest.registered_craftitems[tool].inventory_image
 		end
 	end
-	if texture == nil then
-		texture = "wit_not_found.png"
-	end
 
 	player:hud_change(what_is_this_uwu.huds[name].best_tool, "text", texture)
-	if texture == "wit_not_found.png" then
+	if texture == "" then
 		player:hud_change(what_is_this_uwu.huds[name].tool_in_hand, "text", "")
 	else
 		player:hud_change(
@@ -294,6 +281,7 @@ end
 local function get_desc_from_name(node_name)
 	local wstack = ItemStack(node_name)
 	local def = minetest.registered_items[node_name]
+
 	local desc
 	if wstack.get_short_description then
 		desc = wstack:get_short_description()
@@ -317,7 +305,7 @@ local function get_desc_from_name(node_name)
 	return desc
 end
 
-function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name)
+function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pos)
 	local name = player:get_player_name()
 	if what_is_this_uwu.huds[name].pointed_thing == "ignore" then
 		what_is_this_uwu.show_background(player)
@@ -325,7 +313,7 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 
 	what_is_this_uwu.huds[name].pointed_thing = node_name
 
-	local desc = get_desc_from_name(node_name)
+	local desc = get_desc_from_name(node_name, pos)
 
 	update_size(player, desc, node_name, mod_name)
 	show_best_tool(player, form_view, node_name)
@@ -356,13 +344,7 @@ function what_is_this_uwu.unshow(player)
 		return
 	end
 
-	hud.pointed_thing = "ignore"
-
-	for _, element in pairs(hud) do
-		if type(element) == "number" then
-			player:hud_change(element, "text", "")
-		end
-	end
+	hud:hide()
 end
 
 return what_is_this_uwu

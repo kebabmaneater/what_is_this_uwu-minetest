@@ -1,81 +1,12 @@
 local minetest = minetest
+dofile(minetest.get_modpath("what_is_this_uwu") .. "/frame.lua")
 local what_is_this_uwu = dofile(minetest.get_modpath("what_is_this_uwu") .. "/help.lua")
-
-local hud_type_field_name
-if minetest.features.hud_def_type_field then
-	-- Minetest 5.9.0 and later
-	hud_type_field_name = "type"
-else
-	-- All Minetest versions before 5.9.0
-	hud_type_field_name = "hud_elem_type"
-end
+local player_hud = dofile(minetest.get_modpath("what_is_this_uwu") .. "/player_hud.lua")
 
 local function create_hud(player)
 	local pname = player:get_player_name()
-	local hud = {
-		background_left = player:hud_add({
-			[hud_type_field_name] = "image",
-			position = { x = 0.5, y = 0 },
-			scale = { x = 2, y = 2 },
-			text = "",
-			offset = { x = -50, y = 35 },
-		}),
-		background_middle = player:hud_add({
-			[hud_type_field_name] = "image",
-			position = { x = 0.5, y = 0 },
-			scale = { x = 2, y = 2 },
-			text = "",
-			alignment = { x = 1 },
-			offset = { x = -37.5, y = 35 },
-		}),
-		background_right = player:hud_add({
-			[hud_type_field_name] = "image",
-			position = { x = 0.5, y = 0 },
-			scale = { x = 2, y = 2 },
-			text = "",
-			offset = { x = 0, y = 35 },
-		}),
-		image = player:hud_add({
-			[hud_type_field_name] = "image",
-			position = { x = 0.5, y = 0 },
-			scale = { x = 0.3, y = 0.3 },
-			offset = { x = -35, y = 35 },
-		}),
-		name = player:hud_add({
-			[hud_type_field_name] = "text",
-			position = { x = 0.5, y = 0 },
-			scale = { x = 0.3, y = 0.3 },
-			number = 0xffffff,
-			alignment = { x = 1 },
-			offset = { x = 0, y = 22 },
-		}),
-		mod = player:hud_add({
-			[hud_type_field_name] = "text",
-			position = { x = 0.5, y = 0 },
-			scale = { x = 0.3, y = 0.3 },
-			number = 0xff3c0a,
-			alignment = { x = 1 },
-			offset = { x = 0, y = 37 },
-			style = 2,
-		}),
-		best_tool = player:hud_add({
-			[hud_type_field_name] = "image",
-			position = { x = 0.5, y = 0 },
-			scale = { x = 1, y = 1 },
-			alignment = { x = 1, y = 0 },
-			offset = { x = 0, y = 51 },
-		}),
-		tool_in_hand = player:hud_add({
-			[hud_type_field_name] = "image",
-			position = { x = 0.5, y = 0 },
-			scale = { x = 1, y = 1 },
-			alignment = { x = 1, y = 0 },
-			offset = { x = 0, y = 51 },
-		}),
-		pointed_thing = "ignore",
-	}
-	what_is_this_uwu.huds[pname] = hud
-	what_is_this_uwu.show_table[pname] = true
+
+	what_is_this_uwu.huds[pname] = player_hud.new(player)
 	what_is_this_uwu.possible_tools[pname] = {}
 	what_is_this_uwu.possible_tool_index[pname] = 1
 	what_is_this_uwu.dtimes[pname] = 0
@@ -85,7 +16,6 @@ local function remove_player(player)
 	local pname = player:get_player_name()
 	what_is_this_uwu.huds[pname] = nil
 	what_is_this_uwu.prev_tool[pname] = nil
-	what_is_this_uwu.show_table[pname] = nil
 	what_is_this_uwu.possible_tools[pname] = nil
 	what_is_this_uwu.possible_tool_index[pname] = nil
 	what_is_this_uwu.dtimes[pname] = nil
@@ -118,7 +48,7 @@ local function show(player, skip)
 
 		local mod_name = what_is_this_uwu.split_item_name(node_name)
 		what_is_this_uwu.prev_tool[pname] = current_tool
-		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name)
+		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pointed_thing.under)
 	end
 end
 
