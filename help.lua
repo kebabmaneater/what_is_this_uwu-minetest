@@ -216,7 +216,7 @@ local function update_size(...)
 	end
 
 	if biggest_index == 1 then
-		size = size - 25 -- Remove redundant space
+		size = size * 0.9 -- It gets inflated for no reason!
 	end
 
 	local mult = minetest.settings:get("what_is_this_uwu_text_multiplier", 1.0)
