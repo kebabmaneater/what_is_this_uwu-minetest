@@ -61,7 +61,25 @@ local char_width = {
 	y = 8,
 	z = 8,
 	[" "] = 5,
+	["("] = 5,
+	[")"] = 5,
+	["["] = 5,
+	["]"] = 5,
 	["_"] = 9,
+	["1"] = 9,
+	["2"] = 9,
+	["3"] = 9,
+	["4"] = 9,
+	["5"] = 9,
+	["6"] = 9,
+	["7"] = 9,
+	["8"] = 9,
+	["9"] = 9,
+	["0"] = 9,
+	["."] = 3,
+	[","] = 3,
+	["/"] = 8,
+	[":"] = 3,
 }
 
 local function string_to_pixels(str)
@@ -193,6 +211,10 @@ local function update_size(...)
 	if what_is_this_info and what_is_this_info ~= nil then
 		local lines = {}
 		for line in what_is_this_info:gmatch("[^\r\n]+") do
+			-- if progress bar, get the text part
+			if line:match("progressbar") ~= nil then
+				_, _, line = WhatIsThisApi.parse_string(line)
+			end
 			table.insert(lines, line)
 		end
 		longest = ""
@@ -359,6 +381,7 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 	end
 
 	what_is_this_uwu.huds[name].pointed_thing = node_name
+	what_is_this_uwu.huds[name].pointed_thing_pos = pos
 
 	local desc = get_desc_from_name(node_name, mod_name)
 
@@ -378,9 +401,6 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 	end
 
 	player:hud_change(what_is_this_uwu.huds[name].image, "scale", scale)
-	local what_is_this_info = WhatIsThisApi.get_info(pos)
-
-	player:hud_change(what_is_this_uwu.huds[name].additional_info, "text", what_is_this_info or "")
 end
 
 function what_is_this_uwu.unshow(player)
