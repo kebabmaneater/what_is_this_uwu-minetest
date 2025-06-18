@@ -69,7 +69,10 @@ function player_hud.new(player)
 	self.previous_infotext = ""
 	self.size_of = { x = 0, y = 0 }
 
-	local tech = minetest.settings:get_bool("what_is_this_uwu_spring")
+	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
+	if tech == nil then
+		tech = true
+	end
 	if tech == true then
 		self.scale = {
 			x = Spring.new(0.8, 5, self.frame.scale.x),
@@ -90,7 +93,6 @@ function player_hud:size(size, y_size, previously_hidden)
 
 	player:hud_change(self.image, "offset", { x = -size / 2 - 25.5, y = 35 + (y_size - 3) * 8 })
 	player:hud_change(self.name, "offset", { x = -size / 2 + 2.5, y = 22 })
-	-- player:hud_change(self.additional_info, "offset", { x = -size / 2 + 2.5, y = 30 })
 	player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 })
 
 	player:hud_change(self.best_tool, "offset", { x = size / 2 + 31.5, y = 12 })

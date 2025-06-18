@@ -251,9 +251,6 @@ local function update_size(...)
 	end
 
 	size = size - 18
-	if tech then
-		size = size - 32 --Haphazard fix, but eh
-	end
 
 	local y_size = 3
 
