@@ -6,6 +6,7 @@ local what_is_this_uwu = dofile(minetest.get_modpath("what_is_this_uwu") .. "/he
 local player_hud = dofile(minetest.get_modpath("what_is_this_uwu") .. "/player_hud.lua")
 
 local function create_hud(player)
+	player:hud_set_flags({ infotext = false })
 	local pname = player:get_player_name()
 
 	what_is_this_uwu.huds[pname] = player_hud.new(player)

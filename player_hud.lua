@@ -16,6 +16,7 @@ function player_hud.new(player)
 	self.player = player
 	self.tween = tween
 	self.hidden = false
+	self.shown_on_screen = true
 	self.frame = FrameApi.construct({
 		side = "wit_side.png",
 		center = "wit_center.png",
@@ -83,7 +84,7 @@ function player_hud.new(player)
 	return self
 end
 
-function player_hud:size(size, y_size)
+function player_hud:size(size, y_size, previously_hidden)
 	local player = self.player
 	local frame = self.frame
 
@@ -97,6 +98,16 @@ function player_hud:size(size, y_size)
 
 	if not self.scale then
 		frame:change_size({ x = size / 16 + 6, y = y_size })
+		return
+	end
+
+	if previously_hidden then
+		frame:change_size({ x = size / 16 + 6, y = y_size })
+		self.scale.x:setGoal(size / 16 + 6)
+		self.scale.y:setGoal(y_size)
+
+		self.scale.x:step(100000)
+		self.scale.y:step(100000)
 		return
 	end
 
@@ -126,10 +137,12 @@ function player_hud:hide()
 
 	self.pointed_thing = "ignore"
 	self.frame:hide()
+	self.shown_on_screen = false
 end
 
 function player_hud:show()
 	self.frame:show()
+	self.shown_on_screen = true
 end
 
 return player_hud

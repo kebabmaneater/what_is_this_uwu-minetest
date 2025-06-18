@@ -176,7 +176,7 @@ function what_is_this_uwu.show_background(player)
 end
 
 local function update_size(...)
-	local player, node_description, node_name, mod_name, node_position = ...
+	local player, node_description, node_name, mod_name, node_position, previous_hidden = ...
 	local size
 	node_description =
 		core.get_translated_string(core.get_player_information(player:get_player_name()).lang_code, node_description)
@@ -245,7 +245,7 @@ local function update_size(...)
 	end
 
 	local hud = what_is_this_uwu.huds[player:get_player_name()]
-	hud:size(size, y_size)
+	hud:size(size, y_size, previous_hidden)
 end
 
 local function show_best_tool(player, form_view, node_name)
@@ -352,15 +352,17 @@ end
 
 function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pos)
 	local name = player:get_player_name()
+	local previously_hidden = false
 	if what_is_this_uwu.huds[name].pointed_thing == "ignore" then
 		what_is_this_uwu.show_background(player)
+		previously_hidden = true
 	end
 
 	what_is_this_uwu.huds[name].pointed_thing = node_name
 
 	local desc = get_desc_from_name(node_name, mod_name)
 
-	update_size(player, desc, node_name, mod_name, pos)
+	update_size(player, desc, node_name, mod_name, pos, previously_hidden)
 	show_best_tool(player, form_view, node_name)
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
