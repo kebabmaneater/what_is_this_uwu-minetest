@@ -379,6 +379,8 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 
 	if what_is_this_uwu.huds[name].pointed_thing ~= node_name then
 		what_is_this_uwu.huds[name]:delete_old_lines()
+		local additional_info = WhatIsThisApi.get_info(pos)
+		what_is_this_uwu.huds[name]:parse_additional_info(additional_info or "")
 	end
 
 	what_is_this_uwu.huds[name].pointed_thing = node_name

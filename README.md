@@ -10,7 +10,18 @@ A mod that says at the top of your screen what you're looking at.
 
 ![](./prints/water_source.png)
 
-## Chatcommands
+## Api
+You can set additional info like so:
+```lua
+WhatIsThisApi.set_info(pos, "progressbar(50.0)(0xFFFFFF)[Text inside!]\nHello world!")
+```
+
+You can read the info like so:
+```lua
+WhatIsThisApi.get_info(pos)
+
+```
+## Chat Commands
 
 To unshow the pop-up, type this in console:
 
