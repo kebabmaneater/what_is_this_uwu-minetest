@@ -13,10 +13,6 @@ player_hud.__index = player_hud
 function player_hud.new(player)
 	local self = setmetatable({}, player_hud)
 
-	local tween = Be2eenApi.Tween()
-	tween.interpolation = Be2eenApi.Interpolations.cubic_out
-	tween.duration = 0.2
-
 	self.player = player
 	self.tween = tween
 	self.hidden = false
@@ -25,7 +21,8 @@ function player_hud.new(player)
 		center = "wit_center.png",
 		edge = "wit_edge.png",
 		position = { x = 0.5, y = 0 },
-		offset = { x = 0, y = 35 },
+		alignment = { x = 0, y = 1 },
+		offset = { x = 0, y = 10 },
 		player = player,
 	})
 
@@ -66,39 +63,58 @@ function player_hud.new(player)
 		alignment = { x = 1, y = 1 },
 		offset = { x = 0, y = 51 },
 	})
+	self.additional_info = player:hud_add({
+		[hud_type_field_name] = "text",
+		position = { x = 0.5, y = 0 },
+		alignment = { x = 1, y = 1 },
+		number = 0xc4c4c4,
+		offset = { x = 0, y = 65 },
+	})
 	self.pointed_thing = "ignore"
+
+	local tech = minetest.settings:get_bool("what_is_this_uwu_spring")
+	if tech == true then
+		self.scale = {
+			x = Spring.new(0.8, 5, self.frame.scale.x),
+			y = Spring.new(0.8, 5, self.frame.scale.y),
+		}
+	end
 
 	return self
 end
 
-function player_hud:size(size)
+function player_hud:size(size, y_size)
 	local player = self.player
 	local frame = self.frame
 
-	player:hud_change(self.image, "offset", { x = -size / 2 - 25.5, y = 35 })
+	player:hud_change(self.image, "offset", { x = -size / 2 - 25.5, y = 35 + (y_size - 3) * 8 })
 	player:hud_change(self.name, "offset", { x = -size / 2 + 2.5, y = 22 })
-	player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 37 })
+	player:hud_change(self.additional_info, "offset", { x = -size / 2 + 2.5, y = 30 })
+	player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 })
 
 	player:hud_change(self.best_tool, "offset", { x = size / 2 + 31.5, y = 12 })
 	player:hud_change(self.tool_in_hand, "offset", { x = size / 2 + 31.5, y = 12 })
 
-	local tech = minetest.settings:get_bool("what_is_this_uwu_tween", false)
-	if tech == false then
-		local scaling = size / 16 + 6
-		frame:change_size({ x = scaling, y = 3 })
+	if not self.scale then
+		frame:change_size({ x = size / 16 + 6, y = y_size })
 		return
 	end
 
-	local tween = self.tween
-	if tween:is_running() then
-		tween:stop()
-	end
+	self.scale.x:setGoal(size / 16 + 6)
+	self.scale.y:setGoal(y_size)
+end
 
-	function tween:onStep()
-		local scaling = self:get_animated(frame.scale.x, size / 16 + 6)
-		frame:change_size({ x = scaling, y = 3 })
+function player_hud:on_step(dt)
+	if not self.scale then
+		return
 	end
-	tween:start()
+	self.scale.x:step(dt)
+	self.scale.y:step(dt)
+
+	self.frame:change_size({
+		x = self.scale.x:getPosition(),
+		y = self.scale.y:getPosition(),
+	})
 end
 
 function player_hud:hide()

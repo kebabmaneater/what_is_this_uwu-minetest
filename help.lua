@@ -2,6 +2,7 @@ local what_is_this_uwu = {
 	prev_tool = {},
 	huds = {},
 	possible_tools = {},
+	prev_info_text = {},
 	possible_tool_index = {},
 	dtimes = {},
 }
@@ -175,7 +176,7 @@ function what_is_this_uwu.show_background(player)
 end
 
 local function update_size(...)
-	local player, node_description, node_name, mod_name = ...
+	local player, node_description, node_name, mod_name, node_position = ...
 	local size
 	node_description =
 		core.get_translated_string(core.get_player_information(player:get_player_name()).lang_code, node_description)
@@ -185,8 +186,38 @@ local function update_size(...)
 		node_description = node_description .. " [" .. node_name .. "]"
 	end
 
-	local str = (#node_description >= #mod_name) and node_description or mod_name
-	size = string_to_pixels(str)
+	local what_is_this_info = WhatIsThisApi.get_info(node_position)
+	what_is_this_info =
+		core.get_translated_string(core.get_player_information(player:get_player_name()).lang_code, what_is_this_info)
+	local longest
+	if what_is_this_info and what_is_this_info ~= nil then
+		local lines = {}
+		for line in what_is_this_info:gmatch("[^\r\n]+") do
+			table.insert(lines, line)
+		end
+		longest = ""
+		for _, line in ipairs(lines) do
+			if #line > #longest then
+				longest = line
+			end
+		end
+	end
+
+	local size_contenders = { longest, node_description, mod_name }
+	local biggest_index = 0
+	for index, contender in ipairs(size_contenders) do
+		if contender and contender ~= "" then
+			local contender_size = string_to_pixels(contender)
+			if not size or contender_size > size then
+				biggest_index = index
+				size = contender_size
+			end
+		end
+	end
+
+	if biggest_index == 1 then
+		size = size - 25 -- Remove redundant space
+	end
 
 	local mult = minetest.settings:get("what_is_this_uwu_text_multiplier", 1.0)
 	if mult then
@@ -202,8 +233,19 @@ local function update_size(...)
 		size = size - 32 --Haphazard fix, but eh
 	end
 
+	local y_size = 3
+
+	local what_is_this_info = WhatIsThisApi.get_info(node_position)
+	if what_is_this_info and what_is_this_info ~= "" then
+		for _ in what_is_this_info:gmatch("\n") do
+			y_size = y_size + 1.25
+		end
+
+		y_size = y_size + 0.4 -- Add one for the one line without a newline
+	end
+
 	local hud = what_is_this_uwu.huds[player:get_player_name()]
-	hud:size(size)
+	hud:size(size, y_size)
 end
 
 local function show_best_tool(player, form_view, node_name)
@@ -318,7 +360,7 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 
 	local desc = get_desc_from_name(node_name, mod_name)
 
-	update_size(player, desc, node_name, mod_name)
+	update_size(player, desc, node_name, mod_name, pos)
 	show_best_tool(player, form_view, node_name)
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
@@ -334,6 +376,9 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 	end
 
 	player:hud_change(what_is_this_uwu.huds[name].image, "scale", scale)
+	local what_is_this_info = WhatIsThisApi.get_info(pos)
+
+	player:hud_change(what_is_this_uwu.huds[name].additional_info, "text", what_is_this_info or "")
 end
 
 function what_is_this_uwu.unshow(player)

@@ -1,4 +1,6 @@
 local minetest = minetest
+dofile(minetest.get_modpath("what_is_this_uwu") .. "/spring.lua")
+dofile(minetest.get_modpath("what_is_this_uwu") .. "/api.lua")
 dofile(minetest.get_modpath("what_is_this_uwu") .. "/frame.lua")
 local what_is_this_uwu = dofile(minetest.get_modpath("what_is_this_uwu") .. "/help.lua")
 local player_hud = dofile(minetest.get_modpath("what_is_this_uwu") .. "/player_hud.lua")
@@ -35,8 +37,15 @@ local function show(player, skip)
 		local node = minetest.get_node(pointed_thing.under)
 		local node_name = node.name
 		local current_tool = player:get_wielded_item():get_name()
+		local previous_info_text = what_is_this_uwu.prev_info_text[pname]
+		local info_text = WhatIsThisApi.get_info(pointed_thing.under)
 
-		if hud.pointed_thing == node_name and current_tool == what_is_this_uwu.prev_tool[pname] and not skip then
+		if
+			hud.pointed_thing == node_name
+			and current_tool == what_is_this_uwu.prev_tool[pname]
+			and not skip
+			and previous_info_text == info_text
+		then
 			return
 		end
 
@@ -49,12 +58,15 @@ local function show(player, skip)
 		local mod_name = what_is_this_uwu.split_item_name(node_name)
 		what_is_this_uwu.prev_tool[pname] = current_tool
 		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pointed_thing.under)
+		what_is_this_uwu.prev_info_text[pname] = info_text
 	end
 end
 
 minetest.register_globalstep(function(dtime)
 	for _, player in pairs(minetest.get_connected_players()) do
 		local pname = player:get_player_name()
+		local hud = what_is_this_uwu.huds[pname]
+		hud:on_step(dtime)
 
 		local dtimes = what_is_this_uwu.dtimes
 		local possible_tools = what_is_this_uwu.possible_tools

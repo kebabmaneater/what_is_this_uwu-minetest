@@ -10,14 +10,18 @@ FrameApi.__index = FrameApi
 
 function FrameApi.construct(data)
 	local self = setmetatable({}, FrameApi)
+
 	local position = data.position or { x = 0, y = 0 }
 	local player = data.player
 	local offset = data.offset or { x = 0, y = 0 }
+	local alignment = data.alignment or { x = 0, y = 0 }
 
 	self.scale = { x = 1, y = 1 }
 	self.offset = offset
+	self.alignment = alignment
+	self.player = player
 
-	local hud_images = {
+	self.hud_images = {
 		left = data.side,
 		right = data.side .. "^[transform4",
 		top = data.side .. "^[transform1",
@@ -28,7 +32,7 @@ function FrameApi.construct(data)
 		top_right = data.edge .. "^[transform3",
 		center = data.center,
 	}
-	local hud = {
+	self.hud = {
 		left = player:hud_add({
 			[hud_type_field_name] = "image",
 			position = position,
@@ -99,13 +103,9 @@ function FrameApi.construct(data)
 			scale = { x = 1, y = 1 },
 			text = data.center,
 			offset = { x = 0 + offset.x, y = 0 + offset.y },
-			alignment = { x = 0 },
+			alignment = alignment,
 		}),
 	}
-
-	self.player = player
-	self.hud = hud
-	self.hud_images = hud_images
 	return self
 end
 
@@ -113,45 +113,60 @@ function FrameApi:change_size(scale)
 	local player = self.player
 	local DEFAULT_OFFSET = 8
 
+	local offset_y = self.offset.y
+	local offset_x = self.offset.x
+
+	if self.alignment.y == 1 then
+		offset_y = offset_y + scale.y * DEFAULT_OFFSET
+	elseif self.alignment.y == -1 then
+		offset_y = offset_y - scale.y * DEFAULT_OFFSET
+	end
+
+	if self.alignment.x == 1 then
+		offset_x = offset_x + scale.x * DEFAULT_OFFSET
+	elseif self.alignment.x == -1 then
+		offset_x = offset_x - scale.x * DEFAULT_OFFSET
+	end
+
 	player:hud_change(self.hud.center, "scale", { x = scale.x, y = scale.y })
 
-	player:hud_change(self.hud.left, "offset", { x = -scale.x * DEFAULT_OFFSET + self.offset.x, y = self.offset.y })
+	player:hud_change(self.hud.left, "offset", { x = -scale.x * DEFAULT_OFFSET + offset_x, y = offset_y })
 	player:hud_change(self.hud.left, "scale", { x = 1, y = scale.y })
 
-	player:hud_change(self.hud.right, "offset", { x = scale.x * DEFAULT_OFFSET + self.offset.x, y = self.offset.y })
+	player:hud_change(self.hud.right, "offset", { x = scale.x * DEFAULT_OFFSET + offset_x, y = offset_y })
 	player:hud_change(self.hud.right, "scale", { x = 1, y = scale.y })
 
-	player:hud_change(self.hud.top, "offset", { x = self.offset.x, y = scale.y * DEFAULT_OFFSET + self.offset.y })
+	player:hud_change(self.hud.top, "offset", { x = offset_x, y = scale.y * DEFAULT_OFFSET + offset_y })
 	player:hud_change(self.hud.top, "scale", { x = scale.x, y = 1 })
 
-	player:hud_change(self.hud.bottom, "offset", { x = self.offset.x, y = -scale.y * DEFAULT_OFFSET + self.offset.y })
+	player:hud_change(self.hud.bottom, "offset", { x = offset_x, y = -scale.y * DEFAULT_OFFSET + offset_y })
 	player:hud_change(self.hud.bottom, "scale", { x = scale.x, y = 1 })
 
 	player:hud_change(
 		self.hud.top_left,
 		"offset",
-		{ x = -scale.x * DEFAULT_OFFSET + self.offset.x, y = -scale.y * DEFAULT_OFFSET + self.offset.y }
+		{ x = -scale.x * DEFAULT_OFFSET + offset_x, y = -scale.y * DEFAULT_OFFSET + offset_y }
 	)
 	player:hud_change(self.hud.top_left, "scale", { x = 1, y = 1 })
 
 	player:hud_change(
 		self.hud.top_right,
 		"offset",
-		{ x = scale.x * DEFAULT_OFFSET + self.offset.x, y = -scale.y * DEFAULT_OFFSET + self.offset.y }
+		{ x = scale.x * DEFAULT_OFFSET + offset_x, y = -scale.y * DEFAULT_OFFSET + offset_y }
 	)
 	player:hud_change(self.hud.top_right, "scale", { x = 1, y = 1 })
 
 	player:hud_change(
 		self.hud.bottom_right,
 		"offset",
-		{ x = scale.x * DEFAULT_OFFSET + self.offset.x, y = scale.y * DEFAULT_OFFSET + self.offset.y }
+		{ x = scale.x * DEFAULT_OFFSET + offset_x, y = scale.y * DEFAULT_OFFSET + offset_y }
 	)
 	player:hud_change(self.hud.bottom_right, "scale", { x = 1, y = 1 })
 
 	player:hud_change(
 		self.hud.bottom_left,
 		"offset",
-		{ x = -scale.x * DEFAULT_OFFSET + self.offset.x, y = scale.y * DEFAULT_OFFSET + self.offset.y }
+		{ x = -scale.x * DEFAULT_OFFSET + offset_x, y = scale.y * DEFAULT_OFFSET + offset_y }
 	)
 	player:hud_change(self.hud.bottom_left, "scale", { x = 1, y = 1 })
 
