@@ -377,6 +377,10 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 		previously_hidden = true
 	end
 
+	if what_is_this_uwu.huds[name].pointed_thing ~= node_name then
+		what_is_this_uwu.huds[name]:delete_old_lines()
+	end
+
 	what_is_this_uwu.huds[name].pointed_thing = node_name
 	what_is_this_uwu.huds[name].pointed_thing_pos = pos
 

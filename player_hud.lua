@@ -170,7 +170,7 @@ function player_hud:create_line(data)
 	})
 end
 
-function player_hud:parse_additional_info(text)
+function player_hud:delete_old_lines()
 	local player = self.player
 	local old_line_hud_ids = self.lines
 	if old_line_hud_ids and player then
@@ -186,6 +186,10 @@ function player_hud:parse_additional_info(text)
 			table.remove(self.lines, 1)
 		end
 	end
+end
+
+function player_hud:parse_additional_info(text)
+	self:delete_old_lines()
 	if text == nil or text == "" then
 		return
 	end
