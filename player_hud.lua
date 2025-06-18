@@ -93,7 +93,11 @@ function player_hud:size(size, y_size, previously_hidden)
 
 	player:hud_change(self.image, "offset", { x = -size / 2 - 25.5, y = 35 + (y_size - 3) * 8 })
 	player:hud_change(self.name, "offset", { x = -size / 2 + 2.5, y = 22 })
-	player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 })
+	local add = 0
+	if self.previous_infotext == "" then
+		add = -12
+	end
+	player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 + add })
 
 	player:hud_change(self.best_tool, "offset", { x = size / 2 + 31.5, y = 12 })
 	player:hud_change(self.tool_in_hand, "offset", { x = size / 2 + 31.5, y = 12 })
@@ -244,6 +248,7 @@ function player_hud:position_additional_info_lines()
 	local y_offset = 30
 	local y_step = 19
 	local size = self.size_of.x or 0
+	local y_size = self.size_of.y or 0
 
 	for i, line in ipairs(self.lines) do
 		if line.type == "text" and line.line_text then
@@ -265,6 +270,12 @@ function player_hud:position_additional_info_lines()
 				player:hud_change(line.bar_text, "offset", { x = -size / 2 + 2.5, y = y_offset + (i - 1) * y_step + 1 })
 			end
 		end
+	end
+
+	if #self.lines ~= 0 then
+		player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 })
+	else
+		player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 - 12 })
 	end
 end
 
