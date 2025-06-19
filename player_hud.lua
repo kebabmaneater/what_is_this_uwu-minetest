@@ -298,6 +298,7 @@ function player_hud:hide()
 	self.pointed_thing_pos = nil
 	self.frame:hide()
 	self.shown_on_screen = false
+	self:delete_old_lines()
 end
 
 function player_hud:show()
