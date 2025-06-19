@@ -102,11 +102,11 @@ local function inventorycube(img1, img2, img3)
 end
 
 function what_is_this_uwu.split_item_name(item_name)
-	local splited = {}
+	local splits = {}
 	for char in item_name:gmatch("[^:]+") do
-		table.insert(splited, char)
+		table.insert(splits, char)
 	end
-	return splited[1], splited[2]
+	return splits[1], splits[2]
 end
 
 function what_is_this_uwu.toggle_show(name)

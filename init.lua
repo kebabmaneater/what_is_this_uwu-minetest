@@ -1,10 +1,12 @@
 local minetest = minetest
-dofile(minetest.get_modpath("what_is_this_uwu") .. "/utils/spring.lua")
-dofile(minetest.get_modpath("what_is_this_uwu") .. "/utils/timer.lua")
-dofile(minetest.get_modpath("what_is_this_uwu") .. "/utils/frame.lua")
-dofile(minetest.get_modpath("what_is_this_uwu") .. "/api.lua")
-local what_is_this_uwu = dofile(minetest.get_modpath("what_is_this_uwu") .. "/help.lua")
-local player_hud = dofile(minetest.get_modpath("what_is_this_uwu") .. "/player_hud.lua")
+local modpath = minetest.get_modpath("what_is_this_uwu")
+
+dofile(modpath .. "/utils/spring.lua")
+dofile(modpath .. "/utils/timer.lua")
+dofile(modpath .. "/utils/frame.lua")
+dofile(modpath .. "/api.lua")
+local what_is_this_uwu = dofile(modpath .. "/help.lua")
+local player_hud = dofile(modpath .. "/player_hud.lua")
 
 local store = {
 	timers = {},
@@ -12,29 +14,29 @@ local store = {
 
 local function show(player)
 	local pname = player:get_player_name()
-
 	local pointed_thing = what_is_this_uwu.get_pointed_thing(player)
 	local hud = what_is_this_uwu.huds[pname]
 	if not pointed_thing or not hud then
 		what_is_this_uwu.unshow(player)
-	else
-		local node = minetest.get_node(pointed_thing.under)
-		local node_name = node.name
-
-		if hud.pointed_thing == node_name then
-			return
-		end
-
-		local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name)
-		if not node_definition then
-			what_is_this_uwu.unshow(player)
-			return
-		end
-
-		local mod_name = what_is_this_uwu.split_item_name(node_name)
-		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pointed_thing.under)
-		hud:show_possible_tools(what_is_this_uwu)
+		return
 	end
+
+	local node = minetest.get_node(pointed_thing.under)
+	local node_name = node.name
+
+	if hud.pointed_thing == node_name then
+		return
+	end
+
+	local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name)
+	if not node_definition then
+		what_is_this_uwu.unshow(player)
+		return
+	end
+
+	local mod_name = what_is_this_uwu.split_item_name(node_name)
+	what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pointed_thing.under)
+	hud:show_possible_tools(what_is_this_uwu)
 end
 
 local function create_hud(player)
@@ -42,14 +44,9 @@ local function create_hud(player)
 	local pname = player:get_player_name()
 
 	what_is_this_uwu.huds[pname] = player_hud.new(player)
-
 	local hud = what_is_this_uwu.huds[pname]
 
-	local period = minetest.settings:get("what_is_this_uwu_rate_of_change") or 1.0
-	period = tonumber(period)
-	if type(period) ~= "number" then
-		period = 1.0
-	end
+	local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
 	store.timers[pname] = Timer.new(period, function()
 		hud.possible_tool_index = hud.possible_tool_index + 1
 		if hud.possible_tool_index > #hud.possible_tools then
@@ -74,9 +71,11 @@ minetest.register_globalstep(function(dtime)
 		local pname = player:get_player_name()
 		local hud = what_is_this_uwu.huds[pname]
 		local timer = store.timers[pname]
-		hud:on_step(dtime)
-		timer:on_step(dtime)
-		show(player)
+		if hud and timer then
+			hud:on_step(dtime)
+			timer:on_step(dtime)
+			show(player)
+		end
 	end
 end)
 
