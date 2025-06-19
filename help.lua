@@ -425,6 +425,7 @@ function what_is_this_uwu.show_mob(player, mod_name, mob_name, type, form_view, 
 		player:hud_change(hud.image, "scale", scale)
 		player:hud_change(hud.image, "text", form_view)
 	else
+		player:hud_change(hud.image, "scale", { x = 0.3, y = 0.3 })
 		player:hud_change(hud.image, "text", "wit_ent.png^[resize:146x146")
 	end
 end
