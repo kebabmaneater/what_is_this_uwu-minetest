@@ -8,7 +8,6 @@ local player_hud = dofile(minetest.get_modpath("what_is_this_uwu") .. "/player_h
 
 local store = {
 	timers = {},
-	prev_info_text = {},
 }
 
 local function show(player)
@@ -21,10 +20,8 @@ local function show(player)
 	else
 		local node = minetest.get_node(pointed_thing.under)
 		local node_name = node.name
-		local previous_info_text = store.prev_info_text[pname]
-		local info_text = WhatIsThisApi.get_info(pointed_thing.under)
 
-		if hud.pointed_thing == node_name and previous_info_text == info_text then
+		if hud.pointed_thing == node_name then
 			return
 		end
 
@@ -36,7 +33,7 @@ local function show(player)
 
 		local mod_name = what_is_this_uwu.split_item_name(node_name)
 		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pointed_thing.under)
-		store.prev_info_text[pname] = info_text
+		hud:show_possible_tools(what_is_this_uwu)
 	end
 end
 
@@ -45,11 +42,7 @@ local function create_hud(player)
 	local pname = player:get_player_name()
 
 	what_is_this_uwu.huds[pname] = player_hud.new(player)
-	what_is_this_uwu.possible_tools[pname] = {}
-	what_is_this_uwu.possible_tool_index[pname] = 1
 
-	local possible_tools = what_is_this_uwu.possible_tools
-	local possible_tools_index = what_is_this_uwu.possible_tool_index
 	local hud = what_is_this_uwu.huds[pname]
 
 	local period = minetest.settings:get("what_is_this_uwu_rate_of_change") or 1.0
@@ -58,9 +51,9 @@ local function create_hud(player)
 		period = 1.0
 	end
 	store.timers[pname] = Timer.new(period, function()
-		possible_tools_index[pname] = possible_tools_index[pname] + 1
-		if possible_tools_index[pname] > #possible_tools[pname] then
-			possible_tools_index[pname] = 1
+		hud.possible_tool_index = hud.possible_tool_index + 1
+		if hud.possible_tool_index > #hud.possible_tools then
+			hud.possible_tool_index = 1
 		end
 
 		hud:show_possible_tools(what_is_this_uwu)
@@ -70,9 +63,6 @@ end
 local function remove_player(player)
 	local pname = player:get_player_name()
 	what_is_this_uwu.huds[pname] = nil
-	what_is_this_uwu.possible_tools[pname] = nil
-	what_is_this_uwu.possible_tool_index[pname] = nil
-	store.prev_info_text[pname] = nil
 	store.timers[pname] = nil
 end
 

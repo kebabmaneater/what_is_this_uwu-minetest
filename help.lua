@@ -1,11 +1,8 @@
 local what_is_this_uwu = {
 	huds = {},
-	possible_tools = {},
-	possible_tool_index = {},
-	timers = {},
 }
 
-local char_width = {
+local CHAR_WIDTHS = {
 	A = 12,
 	B = 10,
 	C = 13,
@@ -83,7 +80,7 @@ local char_width = {
 local function string_to_pixels(str)
 	local size = 0
 	for char in str:gmatch(".") do
-		size = size + (char_width[char] or 14)
+		size = size + (CHAR_WIDTHS[char] or 14)
 	end
 
 	return size
@@ -317,20 +314,22 @@ end
 
 function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pos)
 	local name = player:get_player_name()
+	local hud = what_is_this_uwu.huds[name]
+
 	local previously_hidden = false
-	if what_is_this_uwu.huds[name].pointed_thing == "ignore" then
+	if hud.pointed_thing == "ignore" then
 		what_is_this_uwu.show_background(player)
 		previously_hidden = true
 	end
 
-	if what_is_this_uwu.huds[name].pointed_thing ~= node_name then
-		what_is_this_uwu.huds[name]:delete_old_lines()
+	if hud.pointed_thing ~= node_name then
+		hud:delete_old_lines()
 		local additional_info = WhatIsThisApi.get_info(pos)
-		what_is_this_uwu.huds[name]:parse_additional_info(additional_info or "")
+		hud:parse_additional_info(additional_info or "")
 	end
 
-	what_is_this_uwu.huds[name].pointed_thing = node_name
-	what_is_this_uwu.huds[name].pointed_thing_pos = pos
+	hud.pointed_thing = node_name
+	hud.pointed_thing_pos = pos
 
 	local desc = get_desc_from_name(node_name, mod_name)
 
@@ -340,17 +339,17 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 	if tech and desc ~= "" then
 		desc = desc .. " [" .. node_name .. "]"
 	end
-	player:hud_change(what_is_this_uwu.huds[name].name, "text", desc)
-	player:hud_change(what_is_this_uwu.huds[name].mod, "text", mod_name)
+	player:hud_change(hud.name, "text", desc)
+	player:hud_change(hud.mod, "text", mod_name)
 
 	local scale = { x = 0.3, y = 0.3 }
 	if item_type ~= "node" then
 		scale = { x = 2.5, y = 2.5 }
 	end
 
-	player:hud_change(what_is_this_uwu.huds[name].image, "scale", scale)
-	player:hud_change(what_is_this_uwu.huds[name].image, "text", form_view)
-	what_is_this_uwu.huds[name].form_view = form_view
+	player:hud_change(hud.image, "scale", scale)
+	player:hud_change(hud.image, "text", form_view)
+	hud.form_view = form_view
 end
 
 function what_is_this_uwu.unshow(player)

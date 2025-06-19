@@ -68,6 +68,8 @@ function player_hud.new(player)
 	self.lines = {}
 	self.previous_infotext = ""
 	self.size_of = { x = 0, y = 0 }
+	self.possible_tools = {}
+	self.possible_tool_index = 0
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
 	if tech == nil then
@@ -306,7 +308,7 @@ function player_hud:show()
 	self.shown_on_screen = true
 end
 
-function player_hud:show_possible_tools(what_is_this_uwu)
+function player_hud:show_possible_tools()
 	local player = self.player
 	local form_view = self.form_view
 	if form_view == nil or form_view == "" then
@@ -316,17 +318,16 @@ function player_hud:show_possible_tools(what_is_this_uwu)
 	if node_name == nil or node_name == "" or node_name == "ignore" then
 		return
 	end
-	local name = player:get_player_name()
 	local item_def = minetest.registered_items[node_name]
 	local groups = item_def.groups
 
-	what_is_this_uwu.possible_tools[name] = {}
+	self.possible_tools = {}
 	for toolname, tooldef in pairs(minetest.registered_tools) do
 		if tooldef.tool_capabilities then
 			for group, _ in pairs(groups) do
 				if tooldef.tool_capabilities.groupcaps then
 					if tooldef.tool_capabilities.groupcaps[group] then
-						table.insert(what_is_this_uwu.possible_tools[name], toolname)
+						table.insert(self.possible_tools, toolname)
 					end
 				end
 			end
@@ -339,10 +340,10 @@ function player_hud:show_possible_tools(what_is_this_uwu)
 	local correct_tool_in_hand = false
 	local liquids = { "default:water_source", "default:river_water_source", "default:lava_source" }
 	if table.concat(liquids, ","):find(node_name) then
-		what_is_this_uwu.possible_tools[name] = { "bucket:bucket_empty" }
+		self.possible_tools = { "bucket:bucket_empty" }
 		correct_tool_in_hand = (item_name == "bucket:bucket_empty")
 	else
-		for _, tool in ipairs(what_is_this_uwu.possible_tools[name]) do
+		for _, tool in ipairs(self.possible_tools) do
 			if item_name == tool then
 				correct_tool_in_hand = true
 				break
@@ -350,9 +351,9 @@ function player_hud:show_possible_tools(what_is_this_uwu)
 		end
 	end
 
-	local tool = what_is_this_uwu.possible_tools[name][what_is_this_uwu.possible_tool_index[name]]
+	local tool = self.possible_tools[self.possible_tool_index]
 	if tool == nil then
-		tool = what_is_this_uwu.possible_tools[name][1]
+		tool = self.possible_tools[1]
 	end
 	local texture = ""
 	if minetest.registered_tools[tool] then
