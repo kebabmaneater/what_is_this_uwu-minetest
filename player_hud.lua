@@ -16,7 +16,7 @@ function player_hud.new(player)
 	self.player = player
 	self.hidden = false
 	self.shown_on_screen = true
-	self.frame = FrameApi.construct({
+	self.frame = Slice9Frame.new({
 		side = "wit_side.png",
 		center = "wit_center.png",
 		edge = "wit_edge.png",

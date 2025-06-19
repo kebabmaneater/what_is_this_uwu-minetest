@@ -4,7 +4,7 @@ local what_is_this_uwu = {
 	possible_tools = {},
 	prev_info_text = {},
 	possible_tool_index = {},
-	dtimes = {},
+	timers = {},
 }
 
 local char_width = {
@@ -205,8 +205,10 @@ end
 local function update_size(...)
 	local player, node_description, node_name, mod_name, node_position, previous_hidden = ...
 	local size
-	node_description =
-		core.get_translated_string(core.get_player_information(player:get_player_name()).lang_code, node_description)
+	node_description = minetest.get_translated_string(
+		minetest.get_player_information(player:get_player_name()).lang_code,
+		node_description
+	)
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
 	if tech and node_description ~= "" then
@@ -214,15 +216,17 @@ local function update_size(...)
 	end
 
 	local what_is_this_info = WhatIsThisApi.get_info(node_position)
-	what_is_this_info =
-		core.get_translated_string(core.get_player_information(player:get_player_name()).lang_code, what_is_this_info)
+	what_is_this_info = minetest.get_translated_string(
+		minetest.get_player_information(player:get_player_name()).lang_code,
+		what_is_this_info
+	)
 	local longest
 	if what_is_this_info and what_is_this_info ~= nil then
 		local lines = {}
 		for line in what_is_this_info:gmatch("[^\r\n]+") do
 			-- if progress bar, get the text part
 			if line:match("progressbar") ~= nil then
-				_, _, line = WhatIsThisApi.parse_string(line)
+				line = select(3, WhatIsThisApi.parse_string(line))
 			end
 			table.insert(lines, line)
 		end
@@ -263,7 +267,6 @@ local function update_size(...)
 
 	local y_size = 3
 
-	local what_is_this_info = WhatIsThisApi.get_info(node_position)
 	if what_is_this_info and what_is_this_info ~= "" then
 		for _ in what_is_this_info:gmatch("\n") do
 			y_size = y_size + 1.25
@@ -276,7 +279,7 @@ local function update_size(...)
 	hud:size(size, y_size, previous_hidden)
 end
 
-local function show_best_tool(player, form_view, node_name)
+function what_is_this_uwu.show_possible_tools(player, form_view, node_name)
 	local name = player:get_player_name()
 	local item_def = minetest.registered_items[node_name]
 	local groups = item_def.groups
@@ -398,7 +401,6 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 	local desc = get_desc_from_name(node_name, mod_name)
 
 	update_size(player, desc, node_name, mod_name, pos, previously_hidden)
-	show_best_tool(player, form_view, node_name)
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
 	if tech and desc ~= "" then
@@ -413,6 +415,7 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 	end
 
 	player:hud_change(what_is_this_uwu.huds[name].image, "scale", scale)
+	what_is_this_uwu.huds[name].form_view = form_view
 end
 
 function what_is_this_uwu.unshow(player)

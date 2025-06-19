@@ -1,33 +1,12 @@
 local minetest = minetest
-dofile(minetest.get_modpath("what_is_this_uwu") .. "/spring.lua")
+dofile(minetest.get_modpath("what_is_this_uwu") .. "/utils/spring.lua")
+dofile(minetest.get_modpath("what_is_this_uwu") .. "/utils/timer.lua")
+dofile(minetest.get_modpath("what_is_this_uwu") .. "/utils/frame.lua")
 dofile(minetest.get_modpath("what_is_this_uwu") .. "/api.lua")
-dofile(minetest.get_modpath("what_is_this_uwu") .. "/frame.lua")
 local what_is_this_uwu = dofile(minetest.get_modpath("what_is_this_uwu") .. "/help.lua")
 local player_hud = dofile(minetest.get_modpath("what_is_this_uwu") .. "/player_hud.lua")
 
-local function create_hud(player)
-	player:hud_set_flags({ infotext = false })
-	local pname = player:get_player_name()
-
-	what_is_this_uwu.huds[pname] = player_hud.new(player)
-	what_is_this_uwu.possible_tools[pname] = {}
-	what_is_this_uwu.possible_tool_index[pname] = 1
-	what_is_this_uwu.dtimes[pname] = 0
-end
-
-local function remove_player(player)
-	local pname = player:get_player_name()
-	what_is_this_uwu.huds[pname] = nil
-	what_is_this_uwu.prev_tool[pname] = nil
-	what_is_this_uwu.possible_tools[pname] = nil
-	what_is_this_uwu.possible_tool_index[pname] = nil
-	what_is_this_uwu.dtimes[pname] = nil
-end
-
-minetest.register_on_joinplayer(create_hud)
-minetest.register_on_leaveplayer(remove_player)
-
-local function show(player, skip)
+local function show(player)
 	local pname = player:get_player_name()
 
 	local pointed_thing = what_is_this_uwu.get_pointed_thing(player)
@@ -41,12 +20,7 @@ local function show(player, skip)
 		local previous_info_text = what_is_this_uwu.prev_info_text[pname]
 		local info_text = WhatIsThisApi.get_info(pointed_thing.under)
 
-		if
-			hud.pointed_thing == node_name
-			and current_tool == what_is_this_uwu.prev_tool[pname]
-			and not skip
-			and previous_info_text == info_text
-		then
+		if hud.pointed_thing == node_name and previous_info_text == info_text then
 			return
 		end
 
@@ -63,38 +37,68 @@ local function show(player, skip)
 	end
 end
 
+local function create_hud(player)
+	player:hud_set_flags({ infotext = false })
+	local pname = player:get_player_name()
+
+	what_is_this_uwu.huds[pname] = player_hud.new(player)
+	what_is_this_uwu.possible_tools[pname] = {}
+	what_is_this_uwu.possible_tool_index[pname] = 1
+
+	local possible_tools = what_is_this_uwu.possible_tools
+	local possible_tools_index = what_is_this_uwu.possible_tool_index
+	local hud = what_is_this_uwu.huds[pname]
+
+	local period = minetest.settings:get("what_is_this_uwu_rate_of_change") or 1.0
+	period = tonumber(period)
+	if type(period) ~= "number" then
+		period = 1.0
+	end
+	what_is_this_uwu.timers[pname] = Timer.new(period, function()
+		possible_tools_index[pname] = possible_tools_index[pname] + 1
+		if possible_tools_index[pname] > #possible_tools[pname] then
+			possible_tools_index[pname] = 1
+		end
+
+		local form_view = hud.form_view
+		if form_view == nil or form_view == "" then
+			return
+		end
+		local node_name = hud.pointed_thing
+		if node_name == nil or node_name == "" or node_name == "ignore" then
+			return
+		end
+		what_is_this_uwu.show_possible_tools(player, form_view, node_name)
+	end)
+end
+
+local function remove_player(player)
+	local pname = player:get_player_name()
+	what_is_this_uwu.huds[pname] = nil
+	what_is_this_uwu.prev_tool[pname] = nil
+	what_is_this_uwu.possible_tools[pname] = nil
+	what_is_this_uwu.possible_tool_index[pname] = nil
+	what_is_this_uwu.timers[pname] = nil
+end
+
+minetest.register_on_joinplayer(create_hud)
+minetest.register_on_leaveplayer(remove_player)
+
 minetest.register_globalstep(function(dtime)
 	for _, player in pairs(minetest.get_connected_players()) do
 		local pname = player:get_player_name()
 		local hud = what_is_this_uwu.huds[pname]
+		local timer = what_is_this_uwu.timers[pname]
 		hud:on_step(dtime)
-
-		local dtimes = what_is_this_uwu.dtimes
-		local possible_tools = what_is_this_uwu.possible_tools
-		local possible_tools_index = what_is_this_uwu.possible_tool_index
-
-		local change = minetest.settings:get("what_is_this_uwu_rate_of_change", 1.0) or 1.0
-		change = tonumber(change)
-
-		if dtimes[pname] < change then
-			dtimes[pname] = dtimes[pname] + dtime
-			if dtimes[pname] >= change then
-				dtimes[pname] = dtimes[pname] - change
-				possible_tools_index[pname] = possible_tools_index[pname] + 1
-				if possible_tools_index[pname] > #possible_tools[pname] then
-					possible_tools_index[pname] = 1
-				end
-				show(player, true)
-			end
-		end
-
-		show(player, false)
+		timer:step(dtime)
+		show(player)
 	end
 end)
 
 minetest.register_chatcommand("wituwu", {
 	params = "",
 	description = "Show and unshow the wituwu pop-up",
+	privs = {},
 	func = function(name)
 		what_is_this_uwu.toggle_show(name)
 		return true, "Option flipped"
