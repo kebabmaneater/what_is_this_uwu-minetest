@@ -277,6 +277,7 @@ local function update_size(...)
 	end
 
 	local mult = minetest.settings:get("what_is_this_uwu_text_multiplier")
+	mult = tonumber(mult)
 	if type(mult) == "number" then
 		size = math.ceil(size * mult)
 	end
