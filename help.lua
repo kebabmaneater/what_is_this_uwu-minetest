@@ -97,6 +97,7 @@ local function inventorycube(img1, img2, img3)
 	end
 
 	local images = { img1, img2, img3 }
+
 	for i = 1, 3 do
 		images[i] = images[i] .. "^[resize:16x16"
 		images[i] = images[i]:gsub("%^", "&")
@@ -147,15 +148,23 @@ function what_is_this_uwu.get_node_tiles(node_name)
 	local initial_node = node
 	if node.groups["not_in_creative_inventory"] then
 		local drop = node.drop
+		local drop_found = false
 		if drop and type(drop) == "string" then
 			node_name = drop
 			node = minetest.registered_nodes[drop]
 			if not node then
 				node = minetest.registered_craftitems[drop]
+				if node then
+					drop_found = true
+				end
 			end
-			if not node then
-				node = initial_node
-			end
+		end
+		if not drop_found and node_name:find("_active") ~= nil then
+			node_name = node_name:gsub("_active", "")
+			node = minetest.registered_nodes[node_name]
+		end
+		if not node then
+			node = initial_node
 		end
 	end
 
