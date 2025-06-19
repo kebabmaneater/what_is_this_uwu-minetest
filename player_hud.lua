@@ -70,6 +70,7 @@ function player_hud.new(player)
 	self.size_of = { x = 0, y = 0 }
 	self.possible_tools = {}
 	self.possible_tool_index = 0
+	self.looking_at_entity = false
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
 	if tech == nil then
