@@ -1,8 +1,6 @@
 local what_is_this_uwu = {
-	prev_tool = {},
 	huds = {},
 	possible_tools = {},
-	prev_info_text = {},
 	possible_tool_index = {},
 	timers = {},
 }
@@ -279,70 +277,6 @@ local function update_size(...)
 	hud:size(size, y_size, previous_hidden)
 end
 
-function what_is_this_uwu.show_possible_tools(player, form_view, node_name)
-	local name = player:get_player_name()
-	local item_def = minetest.registered_items[node_name]
-	local groups = item_def.groups
-
-	what_is_this_uwu.possible_tools[name] = {}
-	for toolname, tooldef in pairs(minetest.registered_tools) do
-		if tooldef.tool_capabilities then
-			for group, _ in pairs(groups) do
-				if tooldef.tool_capabilities.groupcaps then
-					if tooldef.tool_capabilities.groupcaps[group] then
-						table.insert(what_is_this_uwu.possible_tools[name], toolname)
-					end
-				end
-			end
-		end
-	end
-
-	local wielded_item = player:get_wielded_item()
-	local item_name = wielded_item:get_name()
-
-	local correct_tool_in_hand = false
-	local liquids = { "default:water_source", "default:river_water_source", "default:lava_source" }
-	if table.concat(liquids, ","):find(node_name) then
-		what_is_this_uwu.possible_tools[name] = { "bucket:bucket_empty" }
-		correct_tool_in_hand = (item_name == "bucket:bucket_empty")
-	else
-		for _, tool in ipairs(what_is_this_uwu.possible_tools[name]) do
-			if item_name == tool then
-				correct_tool_in_hand = true
-				break
-			end
-		end
-	end
-
-	local tool = what_is_this_uwu.possible_tools[name][what_is_this_uwu.possible_tool_index[name]]
-	if tool == nil then
-		tool = what_is_this_uwu.possible_tools[name][1]
-	end
-	local texture = ""
-	if minetest.registered_tools[tool] then
-		if minetest.registered_tools[tool].inventory_image then
-			texture = minetest.registered_tools[tool].inventory_image
-		end
-	end
-	if texture == "" and minetest.registered_craftitems[tool] then
-		if minetest.registered_craftitems[tool].inventory_image then
-			texture = minetest.registered_craftitems[tool].inventory_image
-		end
-	end
-
-	player:hud_change(what_is_this_uwu.huds[name].best_tool, "text", texture)
-	if texture == "" then
-		player:hud_change(what_is_this_uwu.huds[name].tool_in_hand, "text", "")
-	else
-		player:hud_change(
-			what_is_this_uwu.huds[name].tool_in_hand,
-			"text",
-			correct_tool_in_hand and "wit_checkmark.png" or "wit_nope.png"
-		)
-	end
-	player:hud_change(what_is_this_uwu.huds[name].image, "text", form_view)
-end
-
 local function get_first_line(text)
 	local firstnewline = string.find(text, "\n")
 	if firstnewline then
@@ -415,6 +349,7 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 	end
 
 	player:hud_change(what_is_this_uwu.huds[name].image, "scale", scale)
+	player:hud_change(what_is_this_uwu.huds[name].image, "text", form_view)
 	what_is_this_uwu.huds[name].form_view = form_view
 end
 

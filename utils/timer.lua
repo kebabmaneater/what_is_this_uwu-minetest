@@ -21,7 +21,7 @@ do
 
 	---Advance the timer by dtime and call callback if period elapsed.
 	---@param dtime number
-	function Timer:step(dtime)
+	function Timer:on_step(dtime)
 		local timer = self.timer
 		local callback = self.callback
 		local period = self.period

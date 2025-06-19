@@ -6,6 +6,11 @@ dofile(minetest.get_modpath("what_is_this_uwu") .. "/api.lua")
 local what_is_this_uwu = dofile(minetest.get_modpath("what_is_this_uwu") .. "/help.lua")
 local player_hud = dofile(minetest.get_modpath("what_is_this_uwu") .. "/player_hud.lua")
 
+local store = {
+	timers = {},
+	prev_info_text = {},
+}
+
 local function show(player)
 	local pname = player:get_player_name()
 
@@ -16,8 +21,7 @@ local function show(player)
 	else
 		local node = minetest.get_node(pointed_thing.under)
 		local node_name = node.name
-		local current_tool = player:get_wielded_item():get_name()
-		local previous_info_text = what_is_this_uwu.prev_info_text[pname]
+		local previous_info_text = store.prev_info_text[pname]
 		local info_text = WhatIsThisApi.get_info(pointed_thing.under)
 
 		if hud.pointed_thing == node_name and previous_info_text == info_text then
@@ -31,9 +35,8 @@ local function show(player)
 		end
 
 		local mod_name = what_is_this_uwu.split_item_name(node_name)
-		what_is_this_uwu.prev_tool[pname] = current_tool
 		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pointed_thing.under)
-		what_is_this_uwu.prev_info_text[pname] = info_text
+		store.prev_info_text[pname] = info_text
 	end
 end
 
@@ -54,31 +57,23 @@ local function create_hud(player)
 	if type(period) ~= "number" then
 		period = 1.0
 	end
-	what_is_this_uwu.timers[pname] = Timer.new(period, function()
+	store.timers[pname] = Timer.new(period, function()
 		possible_tools_index[pname] = possible_tools_index[pname] + 1
 		if possible_tools_index[pname] > #possible_tools[pname] then
 			possible_tools_index[pname] = 1
 		end
 
-		local form_view = hud.form_view
-		if form_view == nil or form_view == "" then
-			return
-		end
-		local node_name = hud.pointed_thing
-		if node_name == nil or node_name == "" or node_name == "ignore" then
-			return
-		end
-		what_is_this_uwu.show_possible_tools(player, form_view, node_name)
+		hud:show_possible_tools(what_is_this_uwu)
 	end)
 end
 
 local function remove_player(player)
 	local pname = player:get_player_name()
 	what_is_this_uwu.huds[pname] = nil
-	what_is_this_uwu.prev_tool[pname] = nil
 	what_is_this_uwu.possible_tools[pname] = nil
 	what_is_this_uwu.possible_tool_index[pname] = nil
-	what_is_this_uwu.timers[pname] = nil
+	store.prev_info_text[pname] = nil
+	store.timers[pname] = nil
 end
 
 minetest.register_on_joinplayer(create_hud)
@@ -88,9 +83,9 @@ minetest.register_globalstep(function(dtime)
 	for _, player in pairs(minetest.get_connected_players()) do
 		local pname = player:get_player_name()
 		local hud = what_is_this_uwu.huds[pname]
-		local timer = what_is_this_uwu.timers[pname]
+		local timer = store.timers[pname]
 		hud:on_step(dtime)
-		timer:step(dtime)
+		timer:on_step(dtime)
 		show(player)
 	end
 end)

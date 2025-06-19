@@ -306,4 +306,72 @@ function player_hud:show()
 	self.shown_on_screen = true
 end
 
+function player_hud:show_possible_tools(what_is_this_uwu)
+	local player = self.player
+	local form_view = self.form_view
+	if form_view == nil or form_view == "" then
+		return
+	end
+	local node_name = self.pointed_thing
+	if node_name == nil or node_name == "" or node_name == "ignore" then
+		return
+	end
+	local name = player:get_player_name()
+	local item_def = minetest.registered_items[node_name]
+	local groups = item_def.groups
+
+	what_is_this_uwu.possible_tools[name] = {}
+	for toolname, tooldef in pairs(minetest.registered_tools) do
+		if tooldef.tool_capabilities then
+			for group, _ in pairs(groups) do
+				if tooldef.tool_capabilities.groupcaps then
+					if tooldef.tool_capabilities.groupcaps[group] then
+						table.insert(what_is_this_uwu.possible_tools[name], toolname)
+					end
+				end
+			end
+		end
+	end
+
+	local wielded_item = player:get_wielded_item()
+	local item_name = wielded_item:get_name()
+
+	local correct_tool_in_hand = false
+	local liquids = { "default:water_source", "default:river_water_source", "default:lava_source" }
+	if table.concat(liquids, ","):find(node_name) then
+		what_is_this_uwu.possible_tools[name] = { "bucket:bucket_empty" }
+		correct_tool_in_hand = (item_name == "bucket:bucket_empty")
+	else
+		for _, tool in ipairs(what_is_this_uwu.possible_tools[name]) do
+			if item_name == tool then
+				correct_tool_in_hand = true
+				break
+			end
+		end
+	end
+
+	local tool = what_is_this_uwu.possible_tools[name][what_is_this_uwu.possible_tool_index[name]]
+	if tool == nil then
+		tool = what_is_this_uwu.possible_tools[name][1]
+	end
+	local texture = ""
+	if minetest.registered_tools[tool] then
+		if minetest.registered_tools[tool].inventory_image then
+			texture = minetest.registered_tools[tool].inventory_image
+		end
+	end
+	if texture == "" and minetest.registered_craftitems[tool] then
+		if minetest.registered_craftitems[tool].inventory_image then
+			texture = minetest.registered_craftitems[tool].inventory_image
+		end
+	end
+
+	player:hud_change(self.best_tool, "text", texture)
+	local correct_tool_texture = ""
+	if texture ~= "" then
+		correct_tool_texture = correct_tool_in_hand and "wit_checkmark.png" or "wit_nope.png"
+	end
+	player:hud_change(self.tool_in_hand, "text", correct_tool_texture)
+end
+
 return player_hud
