@@ -77,12 +77,14 @@ local CHAR_WIDTHS = {
 	[":"] = 3,
 }
 
+local DEFAULT_CHAR_WIDTH = 14
+
 local function string_to_pixels(str)
 	local size = 0
-	for char in str:gmatch(".") do
-		size = size + (CHAR_WIDTHS[char] or 14)
+	for i = 1, #str do
+		local char = str:sub(i, i)
+		size = size + (CHAR_WIDTHS[char] or DEFAULT_CHAR_WIDTH)
 	end
-
 	return size
 end
 
@@ -90,23 +92,20 @@ local function inventorycube(img1, img2, img3)
 	if not img1 then
 		return ""
 	end
-
-	local images = { img1, img2, img3 }
-
-	for i = 1, 3 do
-		images[i] = images[i] .. "^[resize:16x16"
-		images[i] = images[i]:gsub("%^", "&")
-	end
-
+	local images = {
+		(img1 .. "^[resize:16x16"):gsub("%^", "&"),
+		(img2 .. "^[resize:16x16"):gsub("%^", "&"),
+		(img3 .. "^[resize:16x16"):gsub("%^", "&"),
+	}
 	return "[inventorycube{" .. table.concat(images, "{")
 end
 
 function what_is_this_uwu.split_item_name(item_name)
-	local splits = {}
-	for char in item_name:gmatch("[^:]+") do
-		table.insert(splits, char)
+	local colon_pos = item_name:find(":")
+	if colon_pos then
+		return item_name:sub(1, colon_pos - 1), item_name:sub(colon_pos + 1)
 	end
-	return splits[1], splits[2]
+	return item_name, ""
 end
 
 function what_is_this_uwu.toggle_show(name)
@@ -115,78 +114,86 @@ function what_is_this_uwu.toggle_show(name)
 	what_is_this_uwu.unshow(minetest.get_player_by_name(name))
 end
 
+local function process_entity(entity, playerName)
+	if not entity then
+		return nil
+	end
+	if entity.type == "node" then
+		return entity, "node"
+	end
+	local mob = entity.ref and entity.ref:get_luaentity()
+	if mob and mob.name ~= playerName then
+		local mob_name = mob.name or mob.type
+		if mob_name and mob_name:find("__builtin") then
+			return mob.itemstring, "item"
+		end
+		return mob_name, "mob"
+	end
+	return nil
+end
+
 function what_is_this_uwu.get_pointed_thing(player)
-	local playerName = player:get_player_name()
-	local hud = what_is_this_uwu.huds[playerName]
-	if hud.hidden == true then
+	local pname = player:get_player_name()
+	local hud = what_is_this_uwu.huds[pname]
+	if hud.hidden then
 		return
 	end
 
-	local player_pos = player:get_pos() + vector.new(0, player:get_properties().eye_height, 0) + player:get_eye_offset()
+	local player_props = player:get_properties()
+	local player_pos = player:get_pos() + vector.new(0, player_props.eye_height, 0) + player:get_eye_offset()
+	local look_dir = player:get_look_dir()
 
 	local node_name = minetest.get_node(player_pos).name
 	local see_liquid = minetest.registered_nodes[node_name].drawtype ~= "liquid"
 
-	local tool_range = player:get_wielded_item():get_definition().range or minetest.registered_items[""].range or 5
-	local end_pos = player_pos + player:get_look_dir() * tool_range
+	local wielded_item = player:get_wielded_item()
+	local tool_range = wielded_item:get_definition().range or minetest.registered_items[""].range or 5
+	local end_pos = player_pos + look_dir * tool_range
 
-	-- this code is shit but it works
-	local return_thing, type = nil, nil
 	for i = 1, 5 do
-		local entity = minetest.raycast(player_pos + player:get_look_dir() * i, end_pos, true, see_liquid):next()
-		if entity then
-			if entity.type ~= "node" then
-				local mob = entity.ref and entity.ref:get_luaentity()
-				if mob and mob.name ~= player:get_player_name() then
-					return_thing = mob.name or mob.type
-					type = "mob"
-					if return_thing:find("__builtin") then
-						return_thing = mob.itemstring
-						type = "item"
-					end
-					break
-				end
-			else
-				return_thing = entity
-				type = "node"
-				break
-			end
+		local start_pos = player_pos + look_dir * (i / 3)
+		local entity = minetest.raycast(start_pos, end_pos, true, see_liquid):next()
+		local result, kind = process_entity(entity, pname)
+		if result then
+			return result, kind
 		end
 	end
 
-	return return_thing, type
+	return nil, nil
 end
 
 function what_is_this_uwu.get_node_tiles(node_name, node_thing_type)
 	if node_thing_type == "mob" then
 		return "wit_end.png", "craft_item", true
 	elseif node_thing_type == "item" then
-		node_name = node_name:gsub(" %d+$", "") --remove number from end
+		node_name = node_name:gsub(" %d+$", "")
 	end
+
 	local node = minetest.registered_items[node_name] or minetest.registered_nodes[node_name]
-	if node == nil or (not node.tiles and not node.inventory_image) then
+	if not node or (not node.tiles and not node.inventory_image) then
 		return "ignore", "node", false
 	end
 
 	local initial_node = node
-	if node.groups["not_in_creative_inventory"] then
+
+	if node.groups and node.groups["not_in_creative_inventory"] then
 		local drop = node.drop
-		local drop_found = false
 		if drop and type(drop) == "string" then
-			node_name = drop
-			node = minetest.registered_nodes[drop]
-			if not node then
-				node = minetest.registered_craftitems[drop]
-				if node then
-					drop_found = true
-				end
+			local drop_node = minetest.registered_nodes[drop] or minetest.registered_craftitems[drop]
+			if drop_node then
+				node = drop_node
+				node_name = drop
+			end
+		elseif node_name:find("_active") then
+			local base_name = node_name:gsub("_active", "")
+			local base_node = minetest.registered_nodes[base_name]
+			if base_node then
+				node = base_node
+				node_name = base_name
 			end
 		end
-		if not drop_found and node_name:find("_active") ~= nil then
-			node_name = node_name:gsub("_active", "")
-			node = minetest.registered_nodes[node_name]
-		end
-		if not node then
+
+		if not node or (not node.tiles and not node.inventory_image) then
 			node = initial_node
 		end
 	end
@@ -195,118 +202,89 @@ function what_is_this_uwu.get_node_tiles(node_name, node_thing_type)
 		return "ignore", "node", false
 	end
 
-	local tiles = node.tiles or {}
+	local inventory_image = node.inventory_image or ""
+	if inventory_image:sub(1, 14) == "[inventorycube" then
+		return inventory_image .. "^[resize:146x146", "node", node
+	elseif inventory_image ~= "" then
+		return inventory_image .. "^[resize:16x16", "craft_item", node
+	end
 
-	if node.inventory_image:sub(1, 14) == "[inventorycube" then
-		return node.inventory_image .. "^[resize:146x146", "node", node
-	elseif node.inventory_image ~= "" then
-		return node.inventory_image .. "^[resize:16x16", "craft_item", node
-	elseif tiles then
-		tiles[3] = tiles[3] or tiles[1]
-		tiles[6] = tiles[6] or tiles[3]
+	local tiles = node.tiles
+	if tiles then
+		local tile1 = tiles[1] or tiles[1]
+		local tile3 = tiles[3] or tile1
+		local tile6 = tiles[6] or tile3
 
-		if type(tiles[1]) == "table" then
-			tiles[1] = tiles[1].name
+		if type(tile1) == "table" then
+			tile1 = tile1.name
 		end
-		if type(tiles[3]) == "table" then
-			tiles[3] = tiles[3].name
+		if type(tile3) == "table" then
+			tile3 = tile3.name
 		end
-		if type(tiles[6]) == "table" then
-			tiles[6] = tiles[6].name
+		if type(tile6) == "table" then
+			tile6 = tile6.name
 		end
 
-		return inventorycube(tiles[1], tiles[6], tiles[3]), "node", node
+		return inventorycube(tile1, tile6, tile3), "node", node
 	end
 end
 
-function what_is_this_uwu.show_background(player)
+local function show_background(player)
 	local name = player:get_player_name()
 	local hud = what_is_this_uwu.huds[name]
 	hud:show()
 end
 
-local function update_size(...)
-	local player, node_description, mod_name, node_position, previous_hidden = ...
-	local size
-	node_description = minetest.get_translated_string(
-		minetest.get_player_information(player:get_player_name()).lang_code,
-		node_description
-	)
+local function update_size(player, node_description, mod_name, node_position, previous_hidden)
+	local pname = player:get_player_name()
+	local hud = what_is_this_uwu.huds[pname]
+	local lang = minetest.get_player_information(pname).lang_code
+	node_description = minetest.get_translated_string(lang, node_description)
 
-	local hud = what_is_this_uwu.huds[player:get_player_name()]
+	local info = ""
+	if not hud.looking_at_mob and node_position then
+		info = WhatIsThisApi.get_info(node_position)
+		info = minetest.get_translated_string(lang, info)
+	end
 
-	local longest = ""
-	local what_is_this_info = ""
-	if not hud.looking_at_mob and node_position ~= nil then
-		what_is_this_info = WhatIsThisApi.get_info(node_position)
-		what_is_this_info = minetest.get_translated_string(
-			minetest.get_player_information(player:get_player_name()).lang_code,
-			what_is_this_info
-		)
-		if what_is_this_info and what_is_this_info ~= nil then
-			local lines = {}
-			for line in what_is_this_info:gmatch("[^\r\n]+") do
-				-- if progress bar, get the text part
-				if line:match("progressbar") ~= nil then
-					line = select(3, WhatIsThisApi.parse_string(line))
-				end
-				table.insert(lines, line)
+	local line_contenders = { node_description, mod_name }
+
+	if info and info ~= "" then
+		for line in info:gmatch("[^\r\n]+") do
+			if line:find("progressbar", 1, true) then
+				line = select(3, WhatIsThisApi.parse_string(line))
 			end
-			for _, line in ipairs(lines) do
-				if #line > #longest then
-					longest = line
-				end
+			table.insert(line_contenders, line)
+		end
+	end
+
+	local size = 0
+	for _, text in ipairs(line_contenders) do
+		if text and text ~= "" then
+			local s = string_to_pixels(text)
+			if s > size then
+				size = s
 			end
 		end
 	end
 
-	local size_contenders = { longest, node_description, mod_name }
-	local biggest_index = 0
-	for index, contender in ipairs(size_contenders) do
-		if contender ~= nil and contender ~= "" then
-			local contender_size = string_to_pixels(contender)
-			if not size or contender_size > size then
-				biggest_index = index
-				size = contender_size
-			end
-		end
-	end
-
-	if biggest_index == 1 then
-		size = size * 0.9 -- It gets inflated for no reason!
-	end
-
-	local mult = minetest.settings:get("what_is_this_uwu_text_multiplier")
-	mult = tonumber(mult)
-	if type(mult) == "number" then
+	local mult = tonumber(minetest.settings:get("what_is_this_uwu_text_multiplier"))
+	if mult then
 		size = math.ceil(size * mult)
 	end
-
-	if size % 2 ~= 0 then
-		size = size + 1 -- Make sure size is even
-	end
-
 	size = size - 18
 
 	local y_size = 3
-
-	if what_is_this_info and what_is_this_info ~= "" then
-		for _ in what_is_this_info:gmatch("\n") do
-			y_size = y_size + 1.25
-		end
-
-		y_size = y_size + 0.4 -- Add one for the one line without a newline
+	if info and info ~= "" then
+		y_size = y_size + 1.25 * select(2, info:gsub("\n", "")) + 0.4
 	end
 
 	hud:size(size, y_size, previous_hidden)
 end
 
 local function get_first_line(text)
-	local firstnewline = string.find(text, "\n")
-	if firstnewline then
-		text = string.sub(text, 1, firstnewline - 1)
-	end
-	return text
+	local firstnewline = text:find("\n")
+	return firstnewline and text:sub(1, firstnewline - 1) or text
 end
 
 local function get_desc_from_name(node_name, mod_name)
@@ -333,7 +311,7 @@ local function get_desc_from_name(node_name, mod_name)
 	desc = get_first_line(desc)
 
 	if mod_name == "pipeworks" then
-		desc = desc:gsub("%{$", "") --very hacky fix for pipeworks
+		desc = desc:gsub("%{$", "")
 	end
 
 	return desc
@@ -345,7 +323,7 @@ function what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name
 
 	local previously_hidden = false
 	if hud.pointed_thing == "ignore" then
-		what_is_this_uwu.show_background(player)
+		show_background(player)
 		previously_hidden = true
 	end
 
@@ -391,13 +369,16 @@ function what_is_this_uwu.show_mob(player, mod_name, mob_name, type, form_view, 
 
 	local previously_hidden = false
 	if hud.pointed_thing == "ignore" then
-		what_is_this_uwu.show_background(player)
+		show_background(player)
 		previously_hidden = true
 	end
 
 	hud.pointed_thing = mob_name
+	if hud.pointed_thing_pos ~= nil then
+		hud:delete_old_lines()
+		hud.pointed_thing_pos = nil
+	end
 
-	--get the number from item end if it exists
 	local num = mob_name:match(" (%d+)$")
 	local desc = get_desc_from_name(mob_name, mod_name)
 	if num and type == "item" then
@@ -418,7 +399,7 @@ function what_is_this_uwu.show_mob(player, mod_name, mob_name, type, form_view, 
 	player:hud_change(hud.mod, "text", mod_name)
 
 	if type == "item" then
-		mob_name = mob_name:gsub(" %d+$", "") --remove number from end
+		mob_name = mob_name:gsub(" %d+$", "")
 		local scale = { x = 0.3, y = 0.3 }
 		if item_type ~= "node" then
 			scale = { x = 2.5, y = 2.5 }
@@ -435,13 +416,11 @@ function what_is_this_uwu.unshow(player)
 	if not player then
 		return
 	end
-
 	local name = player:get_player_name()
 	local hud = what_is_this_uwu.huds[name]
 	if not hud then
 		return
 	end
-
 	hud:hide()
 end
 

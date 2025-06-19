@@ -8,23 +8,20 @@ dofile(modpath .. "/api.lua")
 local what_is_this_uwu = dofile(modpath .. "/help.lua")
 local player_hud = dofile(modpath .. "/player_hud.lua")
 
-local store = {
-	timers = {},
-}
+local store = { timers = {} }
 
 local function show(player)
 	local pname = player:get_player_name()
 	local pointed_thing, type = what_is_this_uwu.get_pointed_thing(player)
-
 	local hud = what_is_this_uwu.huds[pname]
 
 	if not pointed_thing or not hud then
-		what_is_this_uwu.unshow(player)
-		return
+		return what_is_this_uwu.unshow(player)
 	end
 
+	hud.looking_at_entity = type ~= "node"
+
 	if type == "node" then
-		hud.looking_at_entity = false
 		local node = minetest.get_node(pointed_thing.under)
 		local node_name = node.name
 
@@ -34,25 +31,26 @@ local function show(player)
 
 		local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name)
 		if not node_definition then
-			what_is_this_uwu.unshow(player)
-			return
+			return what_is_this_uwu.unshow(player)
 		end
 
 		local mod_name = what_is_this_uwu.split_item_name(node_name)
 		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pointed_thing.under)
 		hud:show_possible_tools(what_is_this_uwu)
-
 		return
 	end
 
 	local mob_name = pointed_thing
 	local mod_name = what_is_this_uwu.split_item_name(mob_name)
-	local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(mob_name, type)
-	if not node_definition and item_type == "item" then
-		what_is_this_uwu.unshow(player)
+	if hud.pointed_thing == mob_name then
 		return
 	end
-	hud.looking_at_entity = true
+
+	local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(mob_name, type)
+	if not node_definition and item_type == "item" then
+		return what_is_this_uwu.unshow(player)
+	end
+
 	player:hud_change(hud.best_tool, "text", "")
 	player:hud_change(hud.tool_in_hand, "text", "")
 	what_is_this_uwu.show_mob(player, mod_name, mob_name, type, form_view, item_type)
@@ -61,7 +59,6 @@ end
 local function create_hud(player)
 	player:hud_set_flags({ infotext = false })
 	local pname = player:get_player_name()
-
 	what_is_this_uwu.huds[pname] = player_hud.new(player)
 	local hud = what_is_this_uwu.huds[pname]
 
@@ -72,11 +69,7 @@ local function create_hud(player)
 			player:hud_change(hud.tool_in_hand, "text", "")
 			return
 		end
-		hud.possible_tool_index = hud.possible_tool_index + 1
-		if hud.possible_tool_index > #hud.possible_tools then
-			hud.possible_tool_index = 1
-		end
-
+		hud.possible_tool_index = (hud.possible_tool_index % #hud.possible_tools) + 1
 		hud:show_possible_tools(what_is_this_uwu)
 	end)
 end

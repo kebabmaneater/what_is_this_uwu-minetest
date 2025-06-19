@@ -241,7 +241,7 @@ function player_hud:on_step(dt)
 		y = self.scale.y:getPosition(),
 	})
 
-	if self.shown_on_screen and self.pointed_thing_pos then
+	if self.shown_on_screen and self.pointed_thing_pos ~= nil then
 		self:set_additional_info(self.pointed_thing_pos)
 	end
 end
