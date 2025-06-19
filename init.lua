@@ -47,10 +47,15 @@ local function show(player)
 
 	local mob_name = pointed_thing
 	local mod_name = what_is_this_uwu.split_item_name(mob_name)
+	local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(mob_name, type)
+	if not node_definition and item_type == "item" then
+		what_is_this_uwu.unshow(player)
+		return
+	end
 	hud.looking_at_entity = true
 	player:hud_change(hud.best_tool, "text", "")
 	player:hud_change(hud.tool_in_hand, "text", "")
-	what_is_this_uwu.show_mob(player, mod_name, mob_name, type)
+	what_is_this_uwu.show_mob(player, mod_name, mob_name, type, form_view, item_type)
 end
 
 local function create_hud(player)

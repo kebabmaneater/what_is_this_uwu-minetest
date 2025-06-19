@@ -157,8 +157,13 @@ function what_is_this_uwu.get_pointed_thing(player)
 	return return_thing, type
 end
 
-function what_is_this_uwu.get_node_tiles(node_name)
-	local node = minetest.registered_nodes[node_name]
+function what_is_this_uwu.get_node_tiles(node_name, node_thing_type)
+	if node_thing_type == "mob" then
+		return "wit_end.png", "craft_item", true
+	elseif node_thing_type == "item" then
+		node_name = node_name:gsub(" %d+$", "") --remove number from end
+	end
+	local node = minetest.registered_items[node_name] or minetest.registered_nodes[node_name]
 	if node == nil or (not node.tiles and not node.inventory_image) then
 		return "ignore", "node", false
 	end
@@ -212,14 +217,6 @@ function what_is_this_uwu.get_node_tiles(node_name)
 
 		return inventorycube(tiles[1], tiles[6], tiles[3]), "node", node
 	end
-end
-
-function what_is_this_uwu.get_item_image(item_name)
-	local def = minetest.registered_items[item_name]
-	if def and def.inventory_image and def.inventory_image ~= "" then
-		return def.inventory_image
-	end
-	return ""
 end
 
 function what_is_this_uwu.show_background(player)
@@ -387,7 +384,7 @@ function what_is_this_uwu.get_simple_name(full_name)
 	return name:sub(1, 1):upper() .. name:sub(2)
 end
 
-function what_is_this_uwu.show_mob(player, mod_name, mob_name, type)
+function what_is_this_uwu.show_mob(player, mod_name, mob_name, type, form_view, item_type)
 	local pname = player:get_player_name()
 	local hud = what_is_this_uwu.huds[pname]
 
@@ -421,9 +418,12 @@ function what_is_this_uwu.show_mob(player, mod_name, mob_name, type)
 
 	if type == "item" then
 		mob_name = mob_name:gsub(" %d+$", "") --remove number from end
-		player:hud_change(hud.image, "scale", { x = 2.5, y = 2.5 })
-		local img = what_is_this_uwu.get_item_image(mob_name)
-		player:hud_change(hud.image, "text", img)
+		local scale = { x = 0.3, y = 0.3 }
+		if item_type ~= "node" then
+			scale = { x = 2.5, y = 2.5 }
+		end
+		player:hud_change(hud.image, "scale", scale)
+		player:hud_change(hud.image, "text", form_view)
 	else
 		player:hud_change(hud.image, "text", "wit_ent.png^[resize:146x146")
 	end
