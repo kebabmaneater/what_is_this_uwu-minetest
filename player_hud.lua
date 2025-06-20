@@ -1,394 +1,387 @@
-local hud_type_field_name = minetest.features.hud_def_type_field and "type" or "hud_elem_type"
-
 local player_hud = {}
-player_hud.__index = player_hud
+do
+	player_hud.__index = player_hud
 
-function player_hud.new(player)
-	local self = setmetatable({}, player_hud)
+	local hud_type_field_name = minetest.features.hud_def_type_field and "type" or "hud_elem_type"
+	local minetest = minetest
+	local modpath = minetest.get_modpath("what_is_this_uwu")
+	dofile(modpath .. "/utils/spring.lua")
+	dofile(modpath .. "/utils/timer.lua")
+	dofile(modpath .. "/utils/frame.lua")
 
-	self.player = player
-	self.hidden = false
-	self.shown_on_screen = true
-	self.frame = Slice9Frame.new({
-		side = "wit_side.png",
-		center = "wit_center.png",
-		edge = "wit_edge.png",
-		position = { x = 0.5, y = 0 },
-		alignment = { x = 0, y = 1 },
-		offset = { x = 0, y = 10 },
-		player = player,
-	})
+	function player_hud.new(player)
+		local self = setmetatable({}, player_hud)
 
-	self.image = player:hud_add({
-		[hud_type_field_name] = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 0.3, y = 0.3 },
-		offset = { x = -35, y = 35 },
-	})
-	self.name = player:hud_add({
-		[hud_type_field_name] = "text",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 0.3, y = 0.3 },
-		number = 0xffffff,
-		alignment = { x = 1 },
-		offset = { x = 0, y = 22 },
-	})
-	self.mod = player:hud_add({
-		[hud_type_field_name] = "text",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 0.3, y = 0.3 },
-		number = 0xff3c0a,
-		alignment = { x = 1 },
-		offset = { x = 0, y = 37 },
-		style = 2,
-	})
-	self.best_tool = player:hud_add({
-		[hud_type_field_name] = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 1, y = 1 },
-		alignment = { x = 1, y = 1 },
-		offset = { x = 0, y = 51 },
-	})
-	self.tool_in_hand = player:hud_add({
-		[hud_type_field_name] = "image",
-		position = { x = 0.5, y = 0 },
-		scale = { x = 1, y = 1 },
-		alignment = { x = 1, y = 1 },
-		offset = { x = 0, y = 51 },
-	})
-	self.pointed_thing = "ignore"
-	self.pointed_thing_pos = nil
-	self.lines = {}
-	self.previous_infotext = ""
-	self.size_of = { x = 0, y = 0 }
-	self.possible_tools = {}
-	self.possible_tool_index = 0
-	self.looking_at_entity = false
+		self.player = player
+		self.hidden = false
+		self.shown_on_screen = true
+		self.frame = Slice9Frame.new({
+			side = "wit_side.png",
+			center = "wit_center.png",
+			edge = "wit_edge.png",
+			position = { x = 0.5, y = 0 },
+			alignment = { x = 0, y = 1 },
+			offset = { x = 0, y = 10 },
+			player = player,
+		})
 
-	local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
-	self.timer = Timer.new(period, function()
-		if self.looking_at_entity then
-			player:hud_change(self.best_tool, "text", "")
-			player:hud_change(self.tool_in_hand, "text", "")
+		self.image = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 0.3, y = 0.3 },
+			offset = { x = -35, y = 35 },
+		})
+		self.name = player:hud_add({
+			[hud_type_field_name] = "text",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 0.3, y = 0.3 },
+			number = 0xffffff,
+			alignment = { x = 1 },
+			offset = { x = 0, y = 22 },
+		})
+		self.mod = player:hud_add({
+			[hud_type_field_name] = "text",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 0.3, y = 0.3 },
+			number = 0xff3c0a,
+			alignment = { x = 1 },
+			offset = { x = 0, y = 37 },
+			style = 2,
+		})
+		self.best_tool = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 1, y = 1 },
+			alignment = { x = 1, y = 1 },
+			offset = { x = 0, y = 51 },
+		})
+		self.tool_in_hand = player:hud_add({
+			[hud_type_field_name] = "image",
+			position = { x = 0.5, y = 0 },
+			scale = { x = 1, y = 1 },
+			alignment = { x = 1, y = 1 },
+			offset = { x = 0, y = 51 },
+		})
+		self.pointed_thing = "ignore"
+		self.pointed_thing_pos = nil
+		self.lines = {}
+		self.previous_infotext = ""
+		self.size_of = { x = 0, y = 0 }
+		self.possible_tools = {}
+		self.possible_tool_index = 0
+		self.looking_at_entity = false
+
+		local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
+		self.timer = Timer.new(period, function()
+			if self.looking_at_entity then
+				player:hud_change(self.best_tool, "text", "")
+				player:hud_change(self.tool_in_hand, "text", "")
+				return
+			end
+			self.possible_tool_index = (self.possible_tool_index % #self.possible_tools) + 1
+			self:show_possible_tools()
+		end)
+
+		local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
+		if tech == nil then
+			tech = true
+		end
+		if tech == true then
+			self.scale = {
+				x = Spring.new(0.8, 5, self.frame.scale.x),
+				y = Spring.new(0.8, 5, self.frame.scale.y),
+			}
+		end
+
+		return self
+	end
+
+	function player_hud:size(size, y_size, previously_hidden)
+		local player = self.player
+		local frame = self.frame
+		self.size_of = {
+			x = size,
+			y = y_size,
+		}
+
+		player:hud_change(self.image, "offset", { x = -size / 2 - 25.5, y = 35 + (y_size - 3) * 8 })
+		player:hud_change(self.name, "offset", { x = -size / 2 + 2.5, y = 22 })
+		local add = 0
+		if self.previous_infotext == "" then
+			add = -12
+		end
+		player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 + add })
+
+		player:hud_change(self.best_tool, "offset", { x = size / 2 + 31.5, y = 12 })
+		player:hud_change(self.tool_in_hand, "offset", { x = size / 2 + 31.5, y = 12 })
+		self:position_additional_info_lines()
+
+		if not self.scale then
+			frame:change_size({ x = size / 16 + 6, y = y_size })
 			return
 		end
-		self.possible_tool_index = (self.possible_tool_index % #self.possible_tools) + 1
-		self:show_possible_tools()
-	end)
 
-	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
-	if tech == nil then
-		tech = true
-	end
-	if tech == true then
-		self.scale = {
-			x = Spring.new(0.8, 5, self.frame.scale.x),
-			y = Spring.new(0.8, 5, self.frame.scale.y),
-		}
-	end
+		if previously_hidden then
+			frame:change_size({ x = size / 16 + 6, y = y_size })
+			self.scale.x:setGoal(size / 16 + 6)
+			self.scale.y:setGoal(y_size)
 
-	return self
-end
+			self.scale.x:step(100000)
+			self.scale.y:step(100000)
+			return
+		end
 
-function player_hud:size(size, y_size, previously_hidden)
-	local player = self.player
-	local frame = self.frame
-	self.size_of = {
-		x = size,
-		y = y_size,
-	}
-
-	player:hud_change(self.image, "offset", { x = -size / 2 - 25.5, y = 35 + (y_size - 3) * 8 })
-	player:hud_change(self.name, "offset", { x = -size / 2 + 2.5, y = 22 })
-	local add = 0
-	if self.previous_infotext == "" then
-		add = -12
-	end
-	player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 + add })
-
-	player:hud_change(self.best_tool, "offset", { x = size / 2 + 31.5, y = 12 })
-	player:hud_change(self.tool_in_hand, "offset", { x = size / 2 + 31.5, y = 12 })
-	self:position_additional_info_lines()
-
-	if not self.scale then
-		frame:change_size({ x = size / 16 + 6, y = y_size })
-		return
-	end
-
-	if previously_hidden then
-		frame:change_size({ x = size / 16 + 6, y = y_size })
 		self.scale.x:setGoal(size / 16 + 6)
 		self.scale.y:setGoal(y_size)
-
-		self.scale.x:step(100000)
-		self.scale.y:step(100000)
-		return
 	end
 
-	self.scale.x:setGoal(size / 16 + 6)
-	self.scale.y:setGoal(y_size)
-end
+	function player_hud:create_line(data)
+		local is_progress_bar = data.progress_bar or false
+		local text = data.text or ""
+		local percent = data.percent or 0
+		local hex = data.hex or "0xffffff"
 
-function player_hud:create_line(data)
-	local is_progress_bar = data.progress_bar or false
-	local text = data.text or ""
-	local percent = data.percent or 0
-	local hex = data.hex or "0xffffff"
+		percent = tonumber(percent) or 0
 
-	percent = tonumber(percent) or 0
+		local player = self.player
+		if is_progress_bar then
+			table.insert(self.lines, {
+				type = "progress_bar",
+				percent = percent,
+				behind_bar = player:hud_add({
+					[hud_type_field_name] = "image",
+					position = { x = 0.5, y = 0 },
+					scale = { x = 1, y = 1 },
+					alignment = { x = 1, y = 1 },
+					text = "wit_progress_bar.png^[multiply:#3d373c",
+				}),
+				bar = player:hud_add({
+					[hud_type_field_name] = "image",
+					position = { x = 0.5, y = 0 },
+					scale = { x = 1, y = 1 },
+					alignment = { x = 1, y = 1 },
+					text = "wit_progress_bar.png^[multiply:#" .. hex:sub(3),
+				}),
+				bar_text = player:hud_add({
+					[hud_type_field_name] = "text",
+					position = { x = 0.5, y = 0 },
+					number = 0xffffff,
+					scale = { x = 1, y = 1 },
+					alignment = { x = 1, y = 1 },
+					text = text,
+				}),
+			})
+			return
+		end
 
-	local player = self.player
-	if is_progress_bar then
 		table.insert(self.lines, {
-			type = "progress_bar",
-			percent = percent,
-			behind_bar = player:hud_add({
-				[hud_type_field_name] = "image",
-				position = { x = 0.5, y = 0 },
-				scale = { x = 1, y = 1 },
-				alignment = { x = 1, y = 1 },
-				text = "wit_progress_bar.png^[multiply:#3d373c",
-			}),
-			bar = player:hud_add({
-				[hud_type_field_name] = "image",
-				position = { x = 0.5, y = 0 },
-				scale = { x = 1, y = 1 },
-				alignment = { x = 1, y = 1 },
-				text = "wit_progress_bar.png^[multiply:#" .. hex:sub(3),
-			}),
-			bar_text = player:hud_add({
+			type = "text",
+			line_text = player:hud_add({
 				[hud_type_field_name] = "text",
+				number = 0xc4c4c4,
 				position = { x = 0.5, y = 0 },
-				number = 0xffffff,
 				scale = { x = 1, y = 1 },
 				alignment = { x = 1, y = 1 },
 				text = text,
 			}),
 		})
-		return
 	end
 
-	table.insert(self.lines, {
-		type = "text",
-		line_text = player:hud_add({
-			[hud_type_field_name] = "text",
-			number = 0xc4c4c4,
-			position = { x = 0.5, y = 0 },
-			scale = { x = 1, y = 1 },
-			alignment = { x = 1, y = 1 },
-			text = text,
-		}),
-	})
-end
-
-function player_hud:delete_old_lines()
-	local player = self.player
-	local old_line_hud_ids = self.lines
-	if old_line_hud_ids and player then
-		for _ = #old_line_hud_ids, 1, -1 do
-			local elem = old_line_hud_ids[1]
-			if elem.type == "text" then
-				player:hud_remove(elem.line_text)
-			else
-				player:hud_remove(elem.behind_bar)
-				player:hud_remove(elem.bar)
-				player:hud_remove(elem.bar_text)
+	function player_hud:delete_old_lines()
+		local player = self.player
+		local old_line_hud_ids = self.lines
+		if old_line_hud_ids and player then
+			for _ = #old_line_hud_ids, 1, -1 do
+				local elem = old_line_hud_ids[1]
+				if elem.type == "text" then
+					player:hud_remove(elem.line_text)
+				else
+					player:hud_remove(elem.behind_bar)
+					player:hud_remove(elem.bar)
+					player:hud_remove(elem.bar_text)
+				end
+				table.remove(self.lines, 1)
 			end
-			table.remove(self.lines, 1)
 		end
 	end
-end
 
-function player_hud:parse_additional_info(text)
-	self:delete_old_lines()
-	if text == nil or text == "" then
-		return
-	end
-	--get all lines seperated by \n
-	local lines = {}
-	for line in text:gmatch("[^\n]+") do
-		table.insert(lines, line)
-	end
+	function player_hud:parse_additional_info(text)
+		self:delete_old_lines()
+		if text == nil or text == "" then
+			return
+		end
 
-	--check if progress bar text is present in line:
-	for _, line in ipairs(lines) do
-		if line:find("progressbar") ~= nil then
-			local percent, hex, bar_text = WhatIsThisApi.parse_string(line)
-			if percent ~= nil and hex ~= nil then
+		local lines = {}
+		for line in text:gmatch("[^\n]+") do
+			table.insert(lines, line)
+		end
+
+		for _, line in ipairs(lines) do
+			if line:find("progressbar") ~= nil then
+				local percent, hex, bar_text = WhatIsThisApi.parse_string(line)
+				if percent ~= nil and hex ~= nil then
+					self:create_line({
+						progress_bar = true,
+						text = bar_text,
+						hex = hex,
+						percent = percent,
+					})
+				end
+			else
 				self:create_line({
-					progress_bar = true,
-					text = bar_text,
-					hex = hex,
-					percent = percent,
+					progress_bar = false,
+					text = line,
 				})
 			end
-		else
-			self:create_line({
-				progress_bar = false,
-				text = line,
-			})
+		end
+
+		self:position_additional_info_lines()
+	end
+
+	function player_hud:on_step(dt)
+		self.timer:on_step(dt)
+
+		if not self.scale then
+			return
+		end
+		self.scale.x:step(dt)
+		self.scale.y:step(dt)
+
+		self.frame:change_size({
+			x = self.scale.x:getPosition(),
+			y = self.scale.y:getPosition(),
+		})
+
+		if self.shown_on_screen and self.pointed_thing_pos ~= nil then
+			self:set_additional_info(self.pointed_thing_pos)
 		end
 	end
 
-	self:position_additional_info_lines()
-end
+	function player_hud:position_additional_info_lines()
+		local player = self.player
+		local y_offset = 30
+		local y_step = 19
+		local size = self.size_of.x or 0
+		local y_size = self.size_of.y or 0
 
-function player_hud:on_step(dt)
-	self.timer:on_step(dt)
-
-	if not self.scale then
-		return
-	end
-	self.scale.x:step(dt)
-	self.scale.y:step(dt)
-
-	self.frame:change_size({
-		x = self.scale.x:getPosition(),
-		y = self.scale.y:getPosition(),
-	})
-
-	if self.shown_on_screen and self.pointed_thing_pos ~= nil then
-		self:set_additional_info(self.pointed_thing_pos)
-	end
-end
-
-function player_hud:position_additional_info_lines()
-	local player = self.player
-	local y_offset = 30
-	local y_step = 19
-	local size = self.size_of.x or 0
-	local y_size = self.size_of.y or 0
-
-	for i, line in ipairs(self.lines) do
-		if line.type == "text" and line.line_text then
-			player:hud_change(line.line_text, "offset", { x = -size / 2 + 2.5, y = y_offset + (i - 1) * y_step })
-		elseif line.type == "progress_bar" then
-			if line.behind_bar then
-				player:hud_change(
-					line.behind_bar,
-					"offset",
-					{ x = -size / 2 + 2.5, y = y_offset + (i - 1) * y_step + 2 }
-				)
-				player:hud_change(line.behind_bar, "scale", { x = size / 16 + 2.4, y = 1 })
+		for i, line in ipairs(self.lines) do
+			local x = -size / 2 + 2.5
+			local y = y_offset + (i - 1) * y_step
+			if line.type == "text" and line.line_text then
+				player:hud_change(line.line_text, "offset", { x = x, y = y })
 			end
-			if line.bar then
-				player:hud_change(line.bar, "offset", { x = -size / 2 + 2.5, y = y_offset + (i - 1) * y_step + 2 })
-				player:hud_change(line.bar, "scale", { x = (size / 16 + 2.4) * (line.percent / 100), y = 1 })
-			end
-			if line.bar_text then
-				player:hud_change(line.bar_text, "offset", { x = -size / 2 + 2.5, y = y_offset + (i - 1) * y_step + 1 })
+			if line.type == "progress_bar" then
+				if line.behind_bar then
+					player:hud_change(line.behind_bar, "offset", { x = x, y = y + 2 })
+					player:hud_change(line.behind_bar, "scale", { x = size / 16 + 2.4, y = 1 })
+				end
+				if line.bar then
+					player:hud_change(line.bar, "offset", { x = x, y = y + 2 })
+					player:hud_change(line.bar, "scale", { x = (size / 16 + 2.4) * (line.percent / 100), y = 1 })
+				end
+				if line.bar_text then
+					player:hud_change(line.bar_text, "offset", { x = x, y = y + 1 })
+				end
 			end
 		end
-	end
 
-	if #self.lines ~= 0 then
-		player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 })
-	else
-		player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = 50 + (y_size - 3) * 16 - 12 })
-	end
-end
-
-function player_hud:set_additional_info(pos)
-	local what_is_this_info = WhatIsThisApi.get_info(pos)
-	if self.previous_infotext ~= what_is_this_info then
-		self:parse_additional_info(what_is_this_info or "")
-	end
-	self.previous_infotext = what_is_this_info or ""
-end
-
-function player_hud:hide()
-	for _, element in pairs(self) do
-		if type(element) == "number" then
-			self.player:hud_change(element, "text", "")
+		local mod_offset_y = 50 + (y_size - 3) * 16
+		if #self.lines == 0 then
+			mod_offset_y = mod_offset_y - 12
 		end
+		player:hud_change(self.mod, "offset", { x = -size / 2 + 2.5, y = mod_offset_y })
 	end
 
-	self.pointed_thing = "ignore"
-	self.pointed_thing_pos = nil
-	self.frame:hide()
-	self.shown_on_screen = false
-	self:delete_old_lines()
-end
-
-function player_hud:show()
-	self.frame:show()
-	self.shown_on_screen = true
-end
-
-function player_hud:show_possible_tools(options)
-	local player = self.player
-	if options and options.hide then
-		player:hud_change(self.best_tool, "text", "")
-		player:hud_change(self.tool_in_hand, "text", "")
-		return
+	function player_hud:set_additional_info(pos)
+		local what_is_this_info = WhatIsThisApi.get_info(pos)
+		if self.previous_infotext ~= what_is_this_info then
+			self:parse_additional_info(what_is_this_info or "")
+		end
+		self.previous_infotext = what_is_this_info or ""
 	end
-	local form_view = self.form_view
-	if form_view == nil or form_view == "" then
-		player:hud_change(self.best_tool, "text", "")
-		player:hud_change(self.tool_in_hand, "text", "")
-		return
-	end
-	local node_name = self.pointed_thing
-	if node_name == nil or node_name == "" or node_name == "ignore" then
-		player:hud_change(self.best_tool, "text", "")
-		player:hud_change(self.tool_in_hand, "text", "")
-		return
-	end
-	local item_def = minetest.registered_items[node_name]
-	local groups = item_def.groups
 
-	self.possible_tools = {}
-	for toolname, tooldef in pairs(minetest.registered_tools) do
-		if tooldef.tool_capabilities then
-			for group, _ in pairs(groups) do
-				if tooldef.tool_capabilities.groupcaps then
-					if tooldef.tool_capabilities.groupcaps[group] then
+	function player_hud:hide()
+		for _, element in pairs(self) do
+			if type(element) == "number" then
+				self.player:hud_change(element, "text", "")
+			end
+		end
+
+		self.pointed_thing = "ignore"
+		self.pointed_thing_pos = nil
+		self.frame:hide()
+		self.shown_on_screen = false
+		self:delete_old_lines()
+	end
+
+	function player_hud:show()
+		self.frame:show()
+		self.shown_on_screen = true
+	end
+
+	function player_hud:show_possible_tools(options)
+		local player = self.player
+
+		if
+			(options and options.hide)
+			or not self.form_view
+			or self.form_view == ""
+			or not self.pointed_thing
+			or self.pointed_thing == ""
+			or self.pointed_thing == "ignore"
+		then
+			player:hud_change(self.best_tool, "text", "")
+			player:hud_change(self.tool_in_hand, "text", "")
+			return
+		end
+
+		local node_name = self.pointed_thing
+		local item_def = minetest.registered_items[node_name]
+		local groups = item_def and item_def.groups or {}
+
+		self.possible_tools = {}
+		for toolname, tooldef in pairs(minetest.registered_tools) do
+			local caps = tooldef.tool_capabilities and tooldef.tool_capabilities.groupcaps
+			if caps then
+				for group in pairs(groups) do
+					if caps[group] then
 						table.insert(self.possible_tools, toolname)
+						break
 					end
 				end
 			end
 		end
-	end
 
-	local wielded_item = player:get_wielded_item()
-	local item_name = wielded_item:get_name()
-
-	local correct_tool_in_hand = false
-	local liquids = { "default:water_source", "default:river_water_source", "default:lava_source" }
-	if table.concat(liquids, ","):find(node_name) then
-		self.possible_tools = { "bucket:bucket_empty" }
-		correct_tool_in_hand = (item_name == "bucket:bucket_empty")
-	else
-		for _, tool in ipairs(self.possible_tools) do
-			if item_name == tool then
-				correct_tool_in_hand = true
-				break
+		local wielded_item = player:get_wielded_item()
+		local item_name = wielded_item:get_name()
+		local correct_tool_in_hand = false
+		local liquids = { "default:water_source", "default:river_water_source", "default:lava_source" }
+		if table.concat(liquids, ","):find(node_name) then
+			self.possible_tools = { "bucket:bucket_empty" }
+			correct_tool_in_hand = (item_name == "bucket:bucket_empty")
+		else
+			for _, tool in ipairs(self.possible_tools) do
+				if item_name == tool then
+					correct_tool_in_hand = true
+					break
+				end
 			end
 		end
-	end
 
-	local tool = self.possible_tools[self.possible_tool_index]
-	if tool == nil then
-		tool = self.possible_tools[1]
-	end
-	local texture = ""
-	if minetest.registered_tools[tool] then
-		if minetest.registered_tools[tool].inventory_image then
-			texture = minetest.registered_tools[tool].inventory_image
+		local tool = self.possible_tools[self.possible_tool_index] or self.possible_tools[1]
+		local texture = ""
+		if tool then
+			texture = (minetest.registered_tools[tool] and minetest.registered_tools[tool].inventory_image)
+				or (minetest.registered_craftitems[tool] and minetest.registered_craftitems[tool].inventory_image)
+				or ""
 		end
-	end
-	if texture == "" and minetest.registered_craftitems[tool] then
-		if minetest.registered_craftitems[tool].inventory_image then
-			texture = minetest.registered_craftitems[tool].inventory_image
-		end
-	end
 
-	player:hud_change(self.best_tool, "text", texture)
-	local correct_tool_texture = ""
-	if texture ~= "" then
-		correct_tool_texture = correct_tool_in_hand and "wit_checkmark.png" or "wit_nope.png"
+		player:hud_change(self.best_tool, "text", texture)
+		local correct_tool_texture = (texture ~= "")
+				and (correct_tool_in_hand and "wit_checkmark.png" or "wit_nope.png")
+			or ""
+		player:hud_change(self.tool_in_hand, "text", correct_tool_texture)
 	end
-	player:hud_change(self.tool_in_hand, "text", correct_tool_texture)
 end
 
 return player_hud

@@ -97,11 +97,7 @@ function entity_utils.process_entity(entity, playerName)
 	return nil
 end
 
-function entity_utils.get_pointed_thing(player, hud)
-	if hud.hidden then
-		return
-	end
-
+function entity_utils.get_pointed_thing(player)
 	local pname = player:get_player_name()
 	local player_props = player:get_properties()
 	local player_pos = player:get_pos() + vector.new(0, player_props.eye_height, 0) + player:get_eye_offset()

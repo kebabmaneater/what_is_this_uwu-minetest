@@ -23,7 +23,6 @@ local function update_size(player, node_description, mod_name, node_position, pr
 	end
 
 	local line_contenders = { node_description, mod_name }
-
 	if info and info ~= "" then
 		for line in info:gmatch("[^\r\n]+") do
 			if line:find("progressbar", 1, true) then
@@ -57,6 +56,39 @@ local function update_size(player, node_description, mod_name, node_position, pr
 	hud:size(size, y_size, previous_hidden)
 end
 
+local function set_hud_texts(player, hud, desc, mod_name)
+	player:hud_change(hud.name, "text", desc)
+	player:hud_change(hud.mod, "text", mod_name)
+end
+
+local function set_hud_image(player, hud, form_view, item_type, is_mob)
+	local mob_scale = { x = 0.3, y = 0.3 }
+	local item_scale = { x = 2.5, y = 2.5 }
+	local scale = (item_type ~= "node") and item_scale or mob_scale
+
+	if is_mob then
+		player:hud_change(hud.image, "scale", mob_scale)
+		player:hud_change(hud.image, "text", "wit_ent.png^[resize:146x146")
+	else
+		player:hud_change(hud.image, "scale", scale)
+		player:hud_change(hud.image, "text", form_view)
+	end
+end
+
+local function apply_itemname_setting(desc, name)
+	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
+	if tech and desc ~= "" then
+		return desc .. " [" .. name .. "]"
+	end
+	return desc
+end
+
+local function show_common(player, hud, desc, mod_name, form_view, item_type, pos, previously_hidden, is_mob)
+	update_size(player, desc, mod_name, pos, previously_hidden, hud)
+	set_hud_texts(player, hud, desc, mod_name)
+	set_hud_image(player, hud, form_view, item_type, is_mob)
+end
+
 local function show(player, form_view, node_name, item_type, pos, hud)
 	local previously_hidden = false
 	if hud.pointed_thing == "ignore" then
@@ -69,29 +101,15 @@ local function show(player, form_view, node_name, item_type, pos, hud)
 		local additional_info = WhatIsThisApi.get_info(pos)
 		hud:parse_additional_info(additional_info or "")
 	end
-	local mod_name = split_item_name(node_name)
 
+	local mod_name = split_item_name(node_name)
 	hud.pointed_thing = node_name
 	hud.pointed_thing_pos = pos
 
 	local desc = get_desc_from_name(node_name, mod_name)
-	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
-	if tech and desc ~= "" then
-		desc = desc .. " [" .. node_name .. "]"
-	end
+	desc = apply_itemname_setting(desc, node_name)
 
-	update_size(player, desc, mod_name, pos, previously_hidden, hud)
-
-	player:hud_change(hud.name, "text", desc)
-	player:hud_change(hud.mod, "text", mod_name)
-
-	local scale = { x = 0.3, y = 0.3 }
-	if item_type ~= "node" then
-		scale = { x = 2.5, y = 2.5 }
-	end
-
-	player:hud_change(hud.image, "scale", scale)
-	player:hud_change(hud.image, "text", form_view)
+	show_common(player, hud, desc, mod_name, form_view, item_type, pos, previously_hidden, false)
 	hud.form_view = form_view
 end
 
@@ -109,38 +127,16 @@ local function show_mob(player, mob_name, type, form_view, item_type, hud)
 	end
 
 	local mod_name = split_item_name(mob_name)
-
 	local num = mob_name:match(" (%d+)$")
 	local desc = get_desc_from_name(mob_name, mod_name)
 	if num and type == "item" then
 		desc = num .. " " .. desc
-		update_size(player, desc, mod_name, nil, previously_hidden, hud)
 	elseif type == "mob" then
-		local simple_name = get_simple_name(mob_name)
-		desc = simple_name
+		desc = get_simple_name(mob_name)
 	end
+	desc = apply_itemname_setting(desc, mob_name)
 
-	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
-	if tech and desc ~= "" then
-		desc = desc .. " [" .. mob_name .. "]"
-	end
-
-	update_size(player, desc, mod_name, nil, previously_hidden, hud)
-	player:hud_change(hud.name, "text", desc)
-	player:hud_change(hud.mod, "text", mod_name)
-
-	if type == "item" then
-		mob_name = mob_name:gsub(" %d+$", "")
-		local scale = { x = 0.3, y = 0.3 }
-		if item_type ~= "node" then
-			scale = { x = 2.5, y = 2.5 }
-		end
-		player:hud_change(hud.image, "scale", scale)
-		player:hud_change(hud.image, "text", form_view)
-	else
-		player:hud_change(hud.image, "scale", { x = 0.3, y = 0.3 })
-		player:hud_change(hud.image, "text", "wit_ent.png^[resize:146x146")
-	end
+	show_common(player, hud, desc, mod_name, form_view, item_type, nil, previously_hidden, type == "mob")
 end
 
 local function unshow(hud)

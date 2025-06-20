@@ -1,9 +1,6 @@
 local minetest = minetest
 local modpath = minetest.get_modpath("what_is_this_uwu")
 
-dofile(modpath .. "/utils/spring.lua")
-dofile(modpath .. "/utils/timer.lua")
-dofile(modpath .. "/utils/frame.lua")
 dofile(modpath .. "/api.lua")
 local what_is_this_uwu = dofile(modpath .. "/help.lua")
 local player_hud = dofile(modpath .. "/player_hud.lua")
