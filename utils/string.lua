@@ -1,0 +1,136 @@
+local string_utils = {}
+
+local DEFAULT_CHAR_WIDTH = 14
+local CHAR_WIDTHS = {
+	A = 12,
+	B = 10,
+	C = 13,
+	D = 12,
+	E = 11,
+	F = 9,
+	G = 13,
+	H = 12,
+	I = 3,
+	J = 9,
+	K = 11,
+	L = 9,
+	M = 13,
+	N = 11,
+	O = 13,
+	P = 10,
+	Q = 13,
+	R = 12,
+	S = 10,
+	T = 11,
+	U = 11,
+	V = 10,
+	W = 15,
+	X = 11,
+	Y = 11,
+	Z = 10,
+	a = 10,
+	b = 8,
+	c = 8,
+	d = 9,
+	e = 9,
+	f = 5,
+	g = 9,
+	h = 9,
+	i = 2,
+	j = 6,
+	k = 8,
+	l = 4,
+	m = 13,
+	n = 8,
+	o = 10,
+	p = 8,
+	q = 10,
+	r = 4,
+	s = 8,
+	t = 5,
+	u = 8,
+	v = 8,
+	w = 12,
+	x = 8,
+	y = 8,
+	z = 8,
+	[" "] = 8,
+	["("] = 5,
+	[")"] = 5,
+	["["] = 5,
+	["]"] = 5,
+	["_"] = 9,
+	["1"] = 9,
+	["2"] = 9,
+	["3"] = 9,
+	["4"] = 9,
+	["5"] = 9,
+	["6"] = 9,
+	["7"] = 9,
+	["8"] = 9,
+	["9"] = 9,
+	["0"] = 9,
+	["."] = 3,
+	[","] = 3,
+	["/"] = 8,
+	[":"] = 3,
+}
+
+function string_utils.string_to_pixels(str)
+	local size = 0
+	for i = 1, #str do
+		local char = str:sub(i, i)
+		size = size + (CHAR_WIDTHS[char] or DEFAULT_CHAR_WIDTH)
+	end
+	return size
+end
+
+function string_utils.get_simple_name(name)
+	name = name:gsub("_", " ")
+	return name:sub(1, 1):upper() .. name:sub(2)
+end
+
+function string_utils.get_first_line(text)
+	local firstnewline = text:find("\n")
+	return firstnewline and text:sub(1, firstnewline - 1) or text
+end
+
+function string_utils.get_desc_from_name(node_name, mod_name)
+	local wstack = ItemStack(node_name)
+	local def = minetest.registered_items[node_name]
+
+	local desc
+	if wstack.get_short_description then
+		desc = wstack:get_short_description()
+	end
+	if (not desc or desc == "") and wstack.get_description then
+		desc = wstack:get_description()
+	end
+	if (not desc or desc == "") and not wstack.get_description then
+		local meta = wstack:get_meta()
+		desc = meta:get_string("description")
+	end
+	if not desc or desc == "" then
+		desc = def.description
+	end
+	if not desc or desc == "" then
+		desc = node_name
+	end
+	desc = string_utils.get_first_line(desc)
+
+	if mod_name == "pipeworks" then
+		desc = desc:gsub("%{$", "")
+	end
+
+	return desc
+end
+
+function string_utils.split_item_name(item_name)
+	local colon_pos = item_name:find(":")
+	if colon_pos then
+		return item_name:sub(1, colon_pos - 1), item_name:sub(colon_pos + 1)
+	end
+	return item_name, ""
+end
+
+return string_utils

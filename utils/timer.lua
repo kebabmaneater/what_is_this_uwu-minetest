@@ -3,7 +3,6 @@
 ---@field period number
 ---@field callback fun()
 Timer = {}
-
 do
 	Timer.__index = Timer
 

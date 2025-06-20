@@ -1,11 +1,4 @@
-local hud_type_field_name
-if minetest.features.hud_def_type_field then
-	-- Minetest 5.9.0 and later
-	hud_type_field_name = "type"
-else
-	-- All Minetest versions before 5.9.0
-	hud_type_field_name = "hud_elem_type"
-end
+local hud_type_field_name = minetest.features.hud_def_type_field and "type" or "hud_elem_type"
 
 local player_hud = {}
 player_hud.__index = player_hud
@@ -71,6 +64,17 @@ function player_hud.new(player)
 	self.possible_tools = {}
 	self.possible_tool_index = 0
 	self.looking_at_entity = false
+
+	local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
+	self.timer = Timer.new(period, function()
+		if self.looking_at_entity then
+			player:hud_change(self.best_tool, "text", "")
+			player:hud_change(self.tool_in_hand, "text", "")
+			return
+		end
+		self.possible_tool_index = (self.possible_tool_index % #self.possible_tools) + 1
+		self:show_possible_tools()
+	end)
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
 	if tech == nil then
@@ -230,6 +234,8 @@ function player_hud:parse_additional_info(text)
 end
 
 function player_hud:on_step(dt)
+	self.timer:on_step(dt)
+
 	if not self.scale then
 		return
 	end
@@ -309,14 +315,23 @@ function player_hud:show()
 	self.shown_on_screen = true
 end
 
-function player_hud:show_possible_tools()
+function player_hud:show_possible_tools(options)
 	local player = self.player
+	if options and options.hide then
+		player:hud_change(self.best_tool, "text", "")
+		player:hud_change(self.tool_in_hand, "text", "")
+		return
+	end
 	local form_view = self.form_view
 	if form_view == nil or form_view == "" then
+		player:hud_change(self.best_tool, "text", "")
+		player:hud_change(self.tool_in_hand, "text", "")
 		return
 	end
 	local node_name = self.pointed_thing
 	if node_name == nil or node_name == "" or node_name == "ignore" then
+		player:hud_change(self.best_tool, "text", "")
+		player:hud_change(self.tool_in_hand, "text", "")
 		return
 	end
 	local item_def = minetest.registered_items[node_name]

@@ -8,100 +8,32 @@ dofile(modpath .. "/api.lua")
 local what_is_this_uwu = dofile(modpath .. "/help.lua")
 local player_hud = dofile(modpath .. "/player_hud.lua")
 
-local store = { timers = {} }
+local huds = {}
 
-local function show(player)
-	local pname = player:get_player_name()
-	local pointed_thing, type = what_is_this_uwu.get_pointed_thing(player)
-	local hud = what_is_this_uwu.huds[pname]
+minetest.register_on_joinplayer(function(player)
+	huds[player:get_player_name()] = player_hud.new(player)
+end)
 
-	if not pointed_thing or not hud then
-		return what_is_this_uwu.unshow(player)
-	end
+minetest.register_on_leaveplayer(function(player)
+	huds[player:get_player_name()] = nil
+end)
 
-	hud.looking_at_entity = type ~= "node"
-
-	if type == "node" then
-		local node = minetest.get_node(pointed_thing.under)
-		local node_name = node.name
-
-		if hud.pointed_thing == node_name then
-			return
-		end
-
-		local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(node_name)
-		if not node_definition then
-			return what_is_this_uwu.unshow(player)
-		end
-
-		local mod_name = what_is_this_uwu.split_item_name(node_name)
-		what_is_this_uwu.show(player, form_view, node_name, item_type, mod_name, pointed_thing.under)
-		hud:show_possible_tools(what_is_this_uwu)
-		return
-	end
-
-	local mob_name = pointed_thing
-	local mod_name = what_is_this_uwu.split_item_name(mob_name)
-	if hud.pointed_thing == mob_name then
-		return
-	end
-
-	local form_view, item_type, node_definition = what_is_this_uwu.get_node_tiles(mob_name, type)
-	if not node_definition and item_type == "item" then
-		return what_is_this_uwu.unshow(player)
-	end
-
-	player:hud_change(hud.best_tool, "text", "")
-	player:hud_change(hud.tool_in_hand, "text", "")
-	what_is_this_uwu.show_mob(player, mod_name, mob_name, type, form_view, item_type)
-end
-
-local function create_hud(player)
-	player:hud_set_flags({ infotext = false })
-	local pname = player:get_player_name()
-	what_is_this_uwu.huds[pname] = player_hud.new(player)
-	local hud = what_is_this_uwu.huds[pname]
-
-	local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
-	store.timers[pname] = Timer.new(period, function()
-		if hud.looking_at_entity then
-			player:hud_change(hud.best_tool, "text", "")
-			player:hud_change(hud.tool_in_hand, "text", "")
-			return
-		end
-		hud.possible_tool_index = (hud.possible_tool_index % #hud.possible_tools) + 1
-		hud:show_possible_tools(what_is_this_uwu)
-	end)
-end
-
-local function remove_player(player)
-	local pname = player:get_player_name()
-	what_is_this_uwu.huds[pname] = nil
-	store.timers[pname] = nil
-end
-
-local function globalstep(dtime)
+minetest.register_globalstep(function(dtime)
 	for _, player in pairs(minetest.get_connected_players()) do
-		local pname = player:get_player_name()
-		local hud = what_is_this_uwu.huds[pname]
-		local timer = store.timers[pname]
-		if hud and timer then
+		local hud = huds[player:get_player_name()]
+		if hud then
 			hud:on_step(dtime)
-			timer:on_step(dtime)
-			show(player)
+			what_is_this_uwu.update_hud(player, huds)
 		end
 	end
-end
+end)
 
-minetest.register_on_joinplayer(create_hud)
-minetest.register_on_leaveplayer(remove_player)
-minetest.register_globalstep(globalstep)
 minetest.register_chatcommand("wituwu", {
 	params = "",
 	description = "Show and unshow the wituwu pop-up",
 	privs = {},
 	func = function(name)
-		what_is_this_uwu.toggle_show(name)
+		huds[name].hidden = not huds[name].hidden
 		return true, "Option flipped"
 	end,
 })
