@@ -2,13 +2,6 @@
 
 A mod that says at the top of your screen what you're looking at.
 
-## Screenshots:
-
-![](./prints/dirt_with_grass.png)
-
-![](./prints/grass.png)
-
-![](./prints/water_source.png)
 
 ## Api
 You can set additional info like so:
@@ -19,11 +12,16 @@ WhatIsThisApi.set_info(pos, "progressbar(50.0)(0xFFFFFF)[Text inside!]\nHello wo
 You can read the info like so:
 ```lua
 WhatIsThisApi.get_info(pos)
+```
+
+You can also construct a progress bar string via a function like so:
+```lua
+WhatIsThisApi.get_progress_bar_string(percent, hex, text)
 
 ```
 ## Chat Commands
 
-To unshow the pop-up, type this in console:
+To hide the pop-up, type this in console:
 
 ```
 /wituwu
@@ -32,4 +30,4 @@ To unshow the pop-up, type this in console:
 Retype to show it again.
 
 ## Credits
-Released by Kebabmaneater. Credits to Wuzzy for some of the code used in this project, such as the one used for getting the item description. Also credits to the original author of this project Rotfuchs-von-Vulpes.
+Released by Kebabmaneater. Credits to Wuzzy for some of the code used in this project, such as the one used for getting the item description. Also credits to the original author of this project Rotfuchs-von-Vulpes. Lastly, credits to Fractality for making the lua spring module used in this project.
