@@ -89,12 +89,15 @@ function entity_utils.process_entity(entity, playerName)
 	local mob = entity.ref and entity.ref:get_luaentity()
 	if mob and mob.name ~= playerName then
 		local mob_name = mob.name or mob.type
+		if mob_name and mob_name:find("drawers") then
+			return nil, "drawer_visual"
+		end
 		if mob_name and mob_name:find("__builtin") then
 			return mob.itemstring, "item"
 		end
 		return mob_name, "mob"
 	end
-	return nil
+	return nil, "nothing"
 end
 
 function entity_utils.get_pointed_thing(player)
@@ -110,8 +113,9 @@ function entity_utils.get_pointed_thing(player)
 	local tool_range = wielded_item:get_definition().range or minetest.registered_items[""].range or 5
 	local end_pos = player_pos + look_dir * tool_range
 
-	for i = 1, 5 do
-		local start_pos = player_pos + look_dir * (i / 3)
+	local MAX_TIMES = 10
+	for i = 1, MAX_TIMES do
+		local start_pos = player_pos + look_dir * tool_range * (i / MAX_TIMES)
 		local entity = minetest.raycast(start_pos, end_pos, true, see_liquid):next()
 		local result, kind = entity_utils.process_entity(entity, pname)
 		if result then

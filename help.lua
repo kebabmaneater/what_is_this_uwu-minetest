@@ -132,7 +132,9 @@ local function show_mob(player, mob_name, type, form_view, item_type, hud)
 	if num and type == "item" then
 		desc = num .. " " .. desc
 	elseif type == "mob" then
-		desc = get_simple_name(mob_name)
+		local name = select(2, split_item_name(mob_name))
+		mob_name = mob_name:gsub(" %d+$", "") --remove number from end
+		desc = get_simple_name(name)
 	end
 	desc = apply_itemname_setting(desc, mob_name)
 

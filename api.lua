@@ -1,5 +1,4 @@
 WhatIsThisApi = {}
-
 do
 	local minetest = minetest
 
