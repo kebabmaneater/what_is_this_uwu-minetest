@@ -96,7 +96,7 @@ local function show(player, form_view, node_name, item_type, pos, hud)
 		previously_hidden = true
 	end
 
-	if hud.pointed_thing ~= node_name then
+	if hud.pointed_thing ~= node_name or hud.pointed_thing_pos ~= pos then
 		hud:delete_old_lines()
 		local additional_info = WhatIsThisApi.get_info(pos)
 		hud:parse_additional_info(additional_info or "")
@@ -174,7 +174,7 @@ function what_is_this_uwu.update_hud(player, huds)
 		name = pointed_thing
 	end
 
-	if hud.pointed_thing == name then
+	if hud.pointed_thing == name and hud.pointed_thing_pos == pointed_thing.under then
 		return
 	end
 
