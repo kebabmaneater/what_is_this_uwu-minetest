@@ -26,7 +26,7 @@ function entity_utils.get_node_tiles(node_name, node_thing_type)
 
 	local initial_node = node
 
-	if node.groups and node.groups["not_in_creative_inventory"] then
+	if node.groups and node.groups.not_in_creative_inventory then
 		local drop = node.drop
 		if drop and type(drop) == "string" then
 			local drop_node = minetest.registered_nodes[drop] or minetest.registered_craftitems[drop]

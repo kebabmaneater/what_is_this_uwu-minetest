@@ -121,7 +121,7 @@ local function show_mob(player, mob_name, type, form_view, item_type, hud)
 	end
 
 	hud.pointed_thing = mob_name
-	if hud.pointed_thing_pos ~= nil then
+	if hud.pointed_thing_pos then
 		hud:delete_old_lines()
 		hud.pointed_thing_pos = nil
 	end

@@ -68,14 +68,11 @@ do
 		self.previous_infotext = ""
 		self.size_of = { x = 0, y = 0 }
 		self.possible_tools = {}
-		self.possible_tool_index = 0
-		self.looking_at_entity = false
+		self.possible_tool_index = 1
 
 		local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
 		self.timer = Timer.new(period, function()
-			if self.looking_at_entity then
-				player:hud_change(self.best_tool, "text", "")
-				player:hud_change(self.tool_in_hand, "text", "")
+			if #self.possible_tools == 0 then
 				return
 			end
 			self.possible_tool_index = (self.possible_tool_index % #self.possible_tools) + 1
@@ -83,10 +80,7 @@ do
 		end)
 
 		local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
-		if tech == nil then
-			tech = true
-		end
-		if tech == true then
+		if tech then
 			self.scale = {
 				x = Spring.new(0.8, 5, self.frame.scale.x),
 				y = Spring.new(0.8, 5, self.frame.scale.y),
