@@ -9,3 +9,23 @@ what_is_this_uwu_text_multiplier (Multiplier for text size calculations) float 1
 
 #Rate of change for the tool icon in seconds. Default 1.0
 what_is_this_uwu_rate_of_change (Change for tool icon in seconds) float 1.0 0.1
+
+[Positions, offsets and alignment]
+#Position X of the HUD; 0.5 is center. Default: 0.5
+what_is_this_uwu_position_x (Position X of the HUD) float 0.5 0 1
+
+#Position Y of the HUD; 0 is top. Default: 0
+what_is_this_uwu_position_y (Position Y of the HUD) float 0 0 1
+
+#Alignment X of the HUD; 0 is left, 1 is right. Default: 0
+what_is_this_uwu_alignment_x (Alignment X of the HUD) int 0 -1 1
+
+#Alignment Y of the HUD; 0 is top, 1 is bottom. Default: 1
+what_is_this_uwu_alignment_y (Alignment Y of the HUD) int 1 -1 1
+
+#X offset of the HUD in pixels. Default: 0
+what_is_this_uwu_offset_x (X offset of the HUD in pixels) float 0.0
+
+#Y offset of the HUD in pixels. Default: 10
+what_is_this_uwu_offset_y (Y offset of the HUD in pixels) float 10.0
+
