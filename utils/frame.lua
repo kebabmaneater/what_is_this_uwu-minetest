@@ -83,21 +83,59 @@ do
 		local x_scale = scale.x * DEFAULT_OFFSET
 		local y_scale = scale.y * DEFAULT_OFFSET
 
-		local left_x = -x_scale + offset_x
-		local right_x = x_scale + offset_x
-		local top_y = y_scale + offset_y
-		local bottom_y = -y_scale + offset_y
+		-- Calculate float positions
+		local left_x_f = -x_scale + offset_x
+		local right_x_f = x_scale + offset_x
+		local top_y_f = y_scale + offset_y
+		local bottom_y_f = -y_scale + offset_y
+		local center_x_f = offset_x
+		local center_y_f = offset_y
+		local actual_center_x_f = self.offset.x
+		local actual_center_y_f = self.offset.y
+
+		-- Round to nearest integer for HUD
+		local left_x = math.floor(left_x_f + 0.5)
+		local right_x = math.floor(right_x_f + 0.5)
+		local top_y = math.floor(top_y_f + 0.5)
+		local bottom_y = math.floor(bottom_y_f + 0.5)
+		local center_x = math.floor(center_x_f + 0.5)
+		local center_y = math.floor(center_y_f + 0.5)
+		local actual_center_x = math.floor(actual_center_x_f + 0.5)
+		local actual_center_y = math.floor(actual_center_y_f + 0.5)
+
+		-- Calculate the difference caused by rounding
+		local left_gap = center_x - left_x
+		local right_gap = right_x - center_x
+		local top_gap = top_y - center_y
+		local bottom_gap = center_y - bottom_y
+
+		-- Ensure touching: if gap > expected, nudge the side piece to close the gap
+		local expected_gap_x = x_scale
+		local expected_gap_y = y_scale
+
+		if left_gap > expected_gap_x then
+			left_x = center_x - expected_gap_x
+		end
+		if right_gap > expected_gap_x then
+			right_x = center_x + expected_gap_x
+		end
+		if top_gap > expected_gap_y then
+			top_y = center_y + expected_gap_y
+		end
+		if bottom_gap > expected_gap_y then
+			bottom_y = center_y - expected_gap_y
+		end
 
 		local offsets = {
-			left = { x = left_x, y = offset_y },
-			right = { x = right_x, y = offset_y },
-			top = { x = offset_x, y = top_y },
-			bottom = { x = offset_x, y = bottom_y },
+			left = { x = left_x, y = center_y },
+			right = { x = right_x, y = center_y },
+			top = { x = center_x, y = top_y },
+			bottom = { x = center_x, y = bottom_y },
 			top_left = { x = left_x, y = bottom_y },
 			top_right = { x = right_x, y = bottom_y },
 			bottom_right = { x = right_x, y = top_y },
 			bottom_left = { x = left_x, y = top_y },
-			center = self.offset,
+			center = { x = actual_center_x, y = actual_center_y },
 		}
 
 		local scales = {
