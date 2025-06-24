@@ -111,6 +111,16 @@ function entity_utils.get_pointed_thing(player)
 
 	local wielded_item = player:get_wielded_item()
 	local tool_range = wielded_item:get_definition().range or minetest.registered_items[""].range or 5
+	if minetest.get_modpath("mcl_gamemode") and mcl_gamemode then
+		local player_gamemode = mcl_gamemode.get_gamemode(player)
+		if minetest.get_modpath("mcl_meshhand") and mcl_meshhand then
+			if player_gamemode == "creative" then
+				tool_range = tonumber(minetest.settings:get("mcl_hand_range_creative")) or 10
+			else
+				tool_range = tonumber(minetest.settings:get("mcl_hand_range")) or 4.5
+			end
+		end
+	end
 	local end_pos = player_pos + look_dir * tool_range
 
 	local MAX_TIMES = 10
