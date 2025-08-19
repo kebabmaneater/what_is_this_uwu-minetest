@@ -1,15 +1,10 @@
 local minetest = minetest
-local modpath = minetest.get_modpath("what_is_this_uwu")
-local entity_utils = dofile(modpath .. "/utils/entity.lua")
-local string_utils = dofile(modpath .. "/utils/string.lua")
 
-local string_to_pixels = string_utils.string_to_pixels
-local get_simple_name = string_utils.get_simple_name
-local get_desc_from_name = string_utils.get_desc_from_name
-local split_item_name = string_utils.split_item_name
-local get_node_tiles = entity_utils.get_node_tiles
+local M = {}
 
-local what_is_this_uwu = {}
+function M.init(utils)
+	M.utils = utils
+end
 
 local function update_size(player, node_description, mod_name, node_position, previous_hidden, hud)
 	local pname = player:get_player_name()
@@ -35,7 +30,7 @@ local function update_size(player, node_description, mod_name, node_position, pr
 	local size = 0
 	for _, text in ipairs(line_contenders) do
 		if text and text ~= "" then
-			local s = string_to_pixels(text)
+			local s = M.utils.string.string_to_pixels(text)
 			if s > size then
 				size = s
 			end
@@ -102,11 +97,11 @@ local function show(player, form_view, node_name, item_type, pos, hud)
 		hud:parse_additional_info(additional_info or "")
 	end
 
-	local mod_name = split_item_name(node_name)
+	local mod_name = M.utils.string.split_item_name(node_name)
 	hud.pointed_thing = node_name
 	hud.pointed_thing_pos = pos
 
-	local desc = get_desc_from_name(node_name, mod_name)
+	local desc = M.utils.string.get_desc_from_name(node_name, mod_name)
 	desc = apply_itemname_setting(desc, node_name)
 
 	show_common(player, hud, desc, mod_name, form_view, item_type, pos, previously_hidden, false)
@@ -126,15 +121,15 @@ local function show_mob(player, mob_name, type, form_view, item_type, hud)
 		hud.pointed_thing_pos = nil
 	end
 
-	local mod_name = split_item_name(mob_name)
+	local mod_name = M.utils.string.split_item_name(mob_name)
 	local num = mob_name:match(" (%d+)$")
-	local desc = get_desc_from_name(mob_name, mod_name)
+	local desc = M.utils.string.get_desc_from_name(mob_name, mod_name)
 	if num and type == "item" then
 		desc = num .. " " .. desc
 	elseif type == "mob" then
-		local name = select(2, split_item_name(mob_name))
+		local name = select(2, M.utils.string.split_item_name(mob_name))
 		mob_name = mob_name:gsub(" %d+$", "") --remove number from end
-		desc = get_simple_name(name)
+		desc = M.utils.string.get_simple_name(name)
 	end
 	desc = apply_itemname_setting(desc, mob_name)
 
@@ -148,18 +143,20 @@ local function unshow(hud)
 	hud:hide()
 end
 
-function what_is_this_uwu.update_hud(player, huds)
+function M.update_hud(player, huds, dtime)
 	local pname = player:get_player_name()
 	local hud = huds[pname]
 	if not hud then
 		return
 	end
 
+	hud:on_step(dtime)
+
 	if hud.hidden then
 		return unshow(hud)
 	end
 
-	local pointed_thing, type = entity_utils.get_pointed_thing(player, hud)
+	local pointed_thing, type = M.utils.entity.get_pointed_thing(player, hud)
 	if not pointed_thing then
 		return unshow(hud)
 	end
@@ -178,7 +175,7 @@ function what_is_this_uwu.update_hud(player, huds)
 		return
 	end
 
-	local form_view, item_type, node_definition = get_node_tiles(name, type)
+	local form_view, item_type, node_definition = M.utils.entity.get_node_tiles(name, type)
 	if not node_definition and item_type ~= "mob" then
 		return unshow(hud)
 	end
@@ -194,4 +191,4 @@ function what_is_this_uwu.update_hud(player, huds)
 	end
 end
 
-return what_is_this_uwu
+return M

@@ -170,3 +170,5 @@ do
 		end
 	end
 end
+
+return Slice9Frame

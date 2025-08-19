@@ -33,3 +33,5 @@ do
 		self.timer = timer
 	end
 end
+
+return Timer

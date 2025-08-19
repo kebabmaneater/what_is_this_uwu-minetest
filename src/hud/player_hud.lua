@@ -1,12 +1,12 @@
-local player_hud = {}
-player_hud.__index = player_hud
+local M = {}
+M.__index = M
 
 local hud_type_field_name = minetest.features.hud_def_type_field and "type" or "hud_elem_type"
 local minetest = minetest
-local modpath = minetest.get_modpath("what_is_this_uwu")
-dofile(modpath .. "/utils/spring.lua")
-dofile(modpath .. "/utils/timer.lua")
-dofile(modpath .. "/utils/frame.lua")
+
+function M.init(utils)
+	M.utils = utils
+end
 
 local function get_vec2(tbl, default_x, default_y)
 	default_x = default_x or 0
@@ -14,8 +14,8 @@ local function get_vec2(tbl, default_x, default_y)
 	return { x = (tbl and tbl.x) or default_x, y = (tbl and tbl.y) or default_y }
 end
 
-function player_hud.new(player, data)
-	local self = setmetatable({}, player_hud)
+function M.new(player, data)
+	local self = setmetatable({}, M)
 
 	data = data or {}
 	local alignment = get_vec2(data.alignment, 0, 1)
@@ -28,7 +28,7 @@ function player_hud.new(player, data)
 	self.player = player
 	self.hidden = false
 	self.shown_on_screen = true
-	self.frame = Slice9Frame.new({
+	self.frame = M.utils.frame.new({
 		side = "wit_side.png",
 		center = "wit_center.png",
 		edge = "wit_edge.png",
@@ -80,7 +80,7 @@ function player_hud.new(player, data)
 	self.possible_tool_index = 1
 
 	local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
-	self.timer = Timer.new(period, function()
+	self.timer = M.utils.timer.new(period, function()
 		if #self.possible_tools == 0 then
 			return
 		end
@@ -91,15 +91,15 @@ function player_hud.new(player, data)
 	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
 	if tech then
 		self.scale = {
-			x = Spring.new(0.8, 5, self.frame.scale.x),
-			y = Spring.new(0.8, 5, self.frame.scale.y),
+			x = M.utils.spring.new(0.8, 5, self.frame.scale.x),
+			y = M.utils.spring.new(0.8, 5, self.frame.scale.y),
 		}
 	end
 
 	return self
 end
 
-function player_hud:size(size, y_size, previously_hidden)
+function M:size(size, y_size, previously_hidden)
 	local player = self.player
 	local frame = self.frame
 
@@ -166,7 +166,7 @@ function player_hud:size(size, y_size, previously_hidden)
 	self.scale.y:setGoal(y_scale)
 end
 
-function player_hud:create_line(data)
+function M:create_line(data)
 	local is_progress_bar = data.progress_bar or false
 	local text = data.text or ""
 	local percent = data.percent or 0
@@ -218,7 +218,7 @@ function player_hud:create_line(data)
 	})
 end
 
-function player_hud:delete_old_lines()
+function M:delete_old_lines()
 	local player = self.player
 	local old_line_hud_ids = self.lines
 	if old_line_hud_ids and player then
@@ -236,7 +236,7 @@ function player_hud:delete_old_lines()
 	end
 end
 
-function player_hud:parse_additional_info(text)
+function M:parse_additional_info(text)
 	self:delete_old_lines()
 	if text == nil or text == "" then
 		return
@@ -269,7 +269,7 @@ function player_hud:parse_additional_info(text)
 	self:position_additional_info_lines()
 end
 
-function player_hud:handle_spring(dt)
+function M:handle_spring(dt)
 	if not self.scale then
 		return
 	end
@@ -282,7 +282,7 @@ function player_hud:handle_spring(dt)
 	})
 end
 
-function player_hud:on_step(dt)
+function M:on_step(dt)
 	self.timer:on_step(dt)
 
 	if self.shown_on_screen and self.pointed_thing_pos ~= nil then
@@ -292,7 +292,7 @@ function player_hud:on_step(dt)
 	self:handle_spring(dt)
 end
 
-function player_hud:position_additional_info_lines()
+function M:position_additional_info_lines()
 	local player = self.player
 	local y_step = 18
 
@@ -344,7 +344,7 @@ function player_hud:position_additional_info_lines()
 	})
 end
 
-function player_hud:set_additional_info(pos)
+function M:set_additional_info(pos)
 	local what_is_this_info = WhatIsThisApi.get_info(pos)
 	if self.previous_infotext ~= what_is_this_info then
 		self:parse_additional_info(what_is_this_info or "")
@@ -352,7 +352,7 @@ function player_hud:set_additional_info(pos)
 	self.previous_infotext = what_is_this_info or ""
 end
 
-function player_hud:hide()
+function M:hide()
 	for _, element in pairs(self) do
 		if type(element) == "number" then
 			self.player:hud_change(element, "text", "")
@@ -366,12 +366,12 @@ function player_hud:hide()
 	self:delete_old_lines()
 end
 
-function player_hud:show()
+function M:show()
 	self.frame:show()
 	self.shown_on_screen = true
 end
 
-function player_hud:show_possible_tools(options)
+function M:show_possible_tools(options)
 	local player = self.player
 
 	if
@@ -434,4 +434,4 @@ function player_hud:show_possible_tools(options)
 	player:hud_change(self.tool_in_hand, "text", correct_tool_texture)
 end
 
-return player_hud
+return M
