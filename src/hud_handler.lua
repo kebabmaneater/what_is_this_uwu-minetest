@@ -1,11 +1,11 @@
 local M = { huds = {} }
 
 local function create_new_hud(player)
-	local s = M.utils.settings
+	local get_vector = M.utils.settings.get_setting_vector
 	return M.player_hud.new(player, {
-		position = { x = s.get_setting_or("position_x", 0.5), y = s.get_setting_or("position_y", 0) },
-		alignment = { x = s.get_setting_or("alignment_x", 0), y = s.get_setting_or("alignment_y", 1) },
-		offset = { x = s.get_setting_or("offset_x", 0), y = s.get_setting_or("offset_y", 10) },
+		position = get_vector("position", { x = 0.5, y = 0 }),
+		alignment = get_vector("alignment", { x = 0, y = 1 }),
+		offset = get_vector("offset", { x = 0, y = 10 }),
 	})
 end
 

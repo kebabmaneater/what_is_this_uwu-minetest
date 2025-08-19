@@ -372,6 +372,44 @@ function M:show()
 	self.shown_on_screen = true
 end
 
+function M:get_possible_tools()
+	local node_name = self.pointed_thing
+	local item_def = minetest.registered_items[node_name]
+	local groups = item_def and item_def.groups or {}
+	local player = self.player
+	local possible_tools = {}
+
+	for toolname, tooldef in pairs(minetest.registered_tools) do
+		local caps = tooldef.tool_capabilities and tooldef.tool_capabilities.groupcaps
+		if caps then
+			for group in pairs(groups) do
+				if caps[group] then
+					table.insert(possible_tools, toolname)
+					break
+				end
+			end
+		end
+	end
+
+	local wielded_item = player:get_wielded_item()
+	local item_name = wielded_item:get_name()
+	local correct_tool_in_hand = false
+	local liquids = { "default:water_source", "default:river_water_source", "default:lava_source" }
+	if table.concat(liquids, ","):find(node_name) then
+		possible_tools = { "bucket:bucket_empty" }
+		correct_tool_in_hand = (item_name == "bucket:bucket_empty")
+	else
+		for _, tool in ipairs(self.possible_tools) do
+			if item_name == tool then
+				correct_tool_in_hand = true
+				break
+			end
+		end
+	end
+
+	return possible_tools, correct_tool_in_hand
+end
+
 function M:show_possible_tools(options)
 	local player = self.player
 
@@ -388,38 +426,8 @@ function M:show_possible_tools(options)
 		return
 	end
 
-	local node_name = self.pointed_thing
-	local item_def = minetest.registered_items[node_name]
-	local groups = item_def and item_def.groups or {}
-
-	self.possible_tools = {}
-	for toolname, tooldef in pairs(minetest.registered_tools) do
-		local caps = tooldef.tool_capabilities and tooldef.tool_capabilities.groupcaps
-		if caps then
-			for group in pairs(groups) do
-				if caps[group] then
-					table.insert(self.possible_tools, toolname)
-					break
-				end
-			end
-		end
-	end
-
-	local wielded_item = player:get_wielded_item()
-	local item_name = wielded_item:get_name()
 	local correct_tool_in_hand = false
-	local liquids = { "default:water_source", "default:river_water_source", "default:lava_source" }
-	if table.concat(liquids, ","):find(node_name) then
-		self.possible_tools = { "bucket:bucket_empty" }
-		correct_tool_in_hand = (item_name == "bucket:bucket_empty")
-	else
-		for _, tool in ipairs(self.possible_tools) do
-			if item_name == tool then
-				correct_tool_in_hand = true
-				break
-			end
-		end
-	end
+	self.possible_tools, correct_tool_in_hand = self:get_possible_tools()
 
 	local tool = self.possible_tools[self.possible_tool_index] or self.possible_tools[1]
 	local texture = ""

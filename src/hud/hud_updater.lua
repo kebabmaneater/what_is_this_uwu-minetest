@@ -45,6 +45,11 @@ local function update_size(player, node_description, mod_name, node_position, pr
 
 	local lines = collect_hud_lines(utils, desc, mod_name, info)
 	local size = calculate_hud_size(utils, lines)
+
+	local possible_tools = hud:get_possible_tools()
+	if #possible_tools == 0 then
+		size = size - 20
+	end
 	local y_size = calculate_hud_height(utils, info)
 	hud:size(size, y_size, previous_hidden)
 end
@@ -66,14 +71,6 @@ local function set_hud_image(player, hud, form_view, item_type, is_mob)
 		player:hud_change(hud.image, "scale", scale)
 		player:hud_change(hud.image, "text", form_view)
 	end
-end
-
-local function apply_itemname_setting(desc, name)
-	local tech = minetest.settings:get_bool("what_is_this_uwu_itemname", false)
-	if tech and desc ~= "" then
-		return desc .. " [" .. name .. "]"
-	end
-	return desc
 end
 
 local function show_common(player, hud, desc, mod_name, form_view, item_type, pos, previously_hidden, is_mob, utils)
@@ -100,7 +97,7 @@ local function show(player, form_view, node_name, item_type, pos, hud, utils)
 	hud.pointed_thing_pos = pos
 
 	local desc = utils.string.get_desc_from_name(node_name, mod_name)
-	desc = apply_itemname_setting(desc, node_name)
+	desc = utils.settings.apply_technical_name(desc, node_name)
 
 	show_common(player, hud, desc, mod_name, form_view, item_type, pos, previously_hidden, false, utils)
 	hud.form_view = form_view
@@ -129,7 +126,7 @@ local function show_mob(player, mob_name, type, form_view, item_type, hud, utils
 		mob_name = mob_name:gsub(" %d+$", "")
 		desc = utils.string.get_simple_name(name)
 	end
-	desc = apply_itemname_setting(desc, mob_name)
+	desc = utils.settings.apply_technical_name(desc, mob_name)
 
 	show_common(player, hud, desc, mod_name, form_view, item_type, nil, previously_hidden, type == "mob", utils)
 end

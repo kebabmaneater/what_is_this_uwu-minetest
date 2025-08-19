@@ -25,4 +25,11 @@ function M.apply_technical_name(desc, name)
 	return desc
 end
 
+function M.get_setting_vector(name, default)
+	return {
+		x = M.get_setting_or(name .. "_x", default.x or 0),
+		y = M.get_setting_or(name .. "_y", default.y or 0),
+	}
+end
+
 return M
