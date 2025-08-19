@@ -1,4 +1,4 @@
-local string_utils = {}
+local M = {}
 
 local DEFAULT_CHAR_WIDTH = 14
 local CHAR_WIDTHS = {
@@ -76,7 +76,7 @@ local CHAR_WIDTHS = {
 	[":"] = 3,
 }
 
-function string_utils.string_to_pixels(str)
+function M.string_to_pixels(str)
 	local size = 0
 	for i = 1, #str do
 		local char = str:sub(i, i)
@@ -85,17 +85,51 @@ function string_utils.string_to_pixels(str)
 	return size
 end
 
-function string_utils.get_simple_name(name)
+function M.translate(text, lang)
+	if not text or text == "" then
+		return ""
+	end
+	return minetest.get_translated_string(lang, text)
+end
+
+function M.collect_lines(desc, mod_name, info)
+	local lines = { desc, mod_name }
+	if info and info ~= "" then
+		for line in info:gmatch("[^\r\n]+") do
+			if line:find("progressbar", 1, true) then
+				local _, _, progress_line = WhatIsThisApi.parse_string(line)
+				line = progress_line
+			end
+			table.insert(lines, line)
+		end
+	end
+	return lines
+end
+
+function M.max_pixel_width(lines)
+	local max_size = 0
+	for _, text in ipairs(lines) do
+		if text and text ~= "" then
+			local pixel_size = M.string_to_pixels(text)
+			if pixel_size > max_size then
+				max_size = pixel_size
+			end
+		end
+	end
+	return max_size
+end
+
+function M.get_simple_name(name)
 	name = name:gsub("_", " ")
 	return name:sub(1, 1):upper() .. name:sub(2)
 end
 
-function string_utils.get_first_line(text)
+function M.get_first_line(text)
 	local firstnewline = text:find("\n")
 	return firstnewline and text:sub(1, firstnewline - 1) or text
 end
 
-function string_utils.get_desc_from_name(node_name, mod_name)
+function M.get_desc_from_name(node_name, mod_name)
 	local wstack = ItemStack(node_name)
 	local def = minetest.registered_items[node_name]
 
@@ -116,7 +150,7 @@ function string_utils.get_desc_from_name(node_name, mod_name)
 	if not desc or desc == "" then
 		desc = node_name
 	end
-	desc = string_utils.get_first_line(desc)
+	desc = M.get_first_line(desc)
 
 	if mod_name == "pipeworks" then
 		desc = desc:gsub("%{$", "")
@@ -125,7 +159,7 @@ function string_utils.get_desc_from_name(node_name, mod_name)
 	return desc
 end
 
-function string_utils.split_item_name(item_name)
+function M.split_item_name(item_name)
 	local colon_pos = item_name:find(":")
 	if colon_pos then
 		return item_name:sub(1, colon_pos - 1), item_name:sub(colon_pos + 1)
@@ -133,4 +167,4 @@ function string_utils.split_item_name(item_name)
 	return item_name, ""
 end
 
-return string_utils
+return M

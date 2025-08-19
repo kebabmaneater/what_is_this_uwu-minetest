@@ -4,8 +4,9 @@ M.__index = M
 local hud_type_field_name = minetest.features.hud_def_type_field and "type" or "hud_elem_type"
 local minetest = minetest
 
-function M.init(utils)
+function M.init(utils, classes)
 	M.utils = utils
+	M.classes = classes
 end
 
 local function get_vec2(tbl, default_x, default_y)
@@ -28,7 +29,7 @@ function M.new(player, data)
 	self.player = player
 	self.hidden = false
 	self.shown_on_screen = true
-	self.frame = M.utils.frame.new({
+	self.frame = M.classes.frame.new({
 		side = "wit_side.png",
 		center = "wit_center.png",
 		edge = "wit_edge.png",
@@ -80,7 +81,7 @@ function M.new(player, data)
 	self.possible_tool_index = 1
 
 	local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
-	self.timer = M.utils.timer.new(period, function()
+	self.timer = M.classes.timer.new(period, function()
 		if #self.possible_tools == 0 then
 			return
 		end
@@ -91,8 +92,8 @@ function M.new(player, data)
 	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
 	if tech then
 		self.scale = {
-			x = M.utils.spring.new(0.8, 5, self.frame.scale.x),
-			y = M.utils.spring.new(0.8, 5, self.frame.scale.y),
+			x = M.classes.spring.new(0.8, 5, self.frame.scale.x),
+			y = M.classes.spring.new(0.8, 5, self.frame.scale.y),
 		}
 	end
 

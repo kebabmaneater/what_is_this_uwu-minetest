@@ -41,11 +41,12 @@ end
 
 function M.init(modules)
 	M.utils = modules.utils
+	M.classes = modules.classes
 	M.what_is_this_uwu = modules.what_is_this_uwu
 	M.player_hud = modules.player_hud
 
-	M.what_is_this_uwu.init(M.utils)
-	M.player_hud.init(M.utils)
+	M.what_is_this_uwu.init(M.utils, M.classes)
+	M.player_hud.init(M.utils, M.classes)
 
 	minetest.register_on_joinplayer(on_join)
 	minetest.register_on_leaveplayer(on_leave)
