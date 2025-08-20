@@ -45,8 +45,8 @@ function M.init(modules)
 	M.what_is_this_uwu = modules.what_is_this_uwu
 	M.player_hud = modules.player_hud
 
-	M.what_is_this_uwu.init(M.utils, M.classes)
-	M.player_hud.init(M.utils, M.classes)
+	M.what_is_this_uwu.init(M.utils, M.classes, WhatIsThisApi)
+	M.player_hud.init(M.utils, M.classes, WhatIsThisApi)
 
 	minetest.register_on_joinplayer(on_join)
 	minetest.register_on_leaveplayer(on_leave)

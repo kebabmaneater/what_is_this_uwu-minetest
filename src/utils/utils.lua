@@ -6,4 +6,5 @@ return {
 	settings = dofile(utils .. "settings.lua"),
 	string = dofile(utils .. "string.lua"),
 	frame = dofile(utils .. "frame.lua"),
+	vector = dofile(utils .. "vector.lua"),
 }

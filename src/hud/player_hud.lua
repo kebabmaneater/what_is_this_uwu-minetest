@@ -2,76 +2,25 @@ local M = {}
 M.__index = M
 
 local hud_type_field_name = minetest.features.hud_def_type_field and "type" or "hud_elem_type"
-local minetest = minetest
 
-function M.init(utils, classes)
+function M.init(utils, classes, api)
 	M.utils = utils
 	M.classes = classes
-end
-
-local function get_vec2(tbl, default_x, default_y)
-	default_x = default_x or 0
-	default_y = default_y or 0
-	return { x = (tbl and tbl.x) or default_x, y = (tbl and tbl.y) or default_y }
+	M.api = api
 end
 
 function M.new(player, data)
 	local self = setmetatable({}, M)
-
 	data = data or {}
-	local alignment = get_vec2(data.alignment, 0, 1)
-	local position = get_vec2(data.position, 0.5, 0)
-	local offset = get_vec2(data.offset, 0, 10)
-	self.alignment = alignment
-	self.position = position
-	self.offset = offset
 
+	local get_vec2 = M.utils.vector.get_vec2
+
+	self.alignment = get_vec2(data.alignment, 0, 1)
+	self.position = get_vec2(data.position, 0.5, 0)
+	self.offset = get_vec2(data.offset, 0, 10)
 	self.player = player
 	self.hidden = false
 	self.shown_on_screen = true
-	self.frame = M.classes.frame.new({
-		side = "wit_side.png",
-		center = "wit_center.png",
-		edge = "wit_edge.png",
-		position = position,
-		alignment = alignment,
-		offset = offset,
-		player = player,
-	})
-
-	self.image = player:hud_add({
-		[hud_type_field_name] = "image",
-		position = position,
-		alignment = { x = 1 },
-		scale = { x = 0.3, y = 0.3 },
-	})
-	self.name = player:hud_add({
-		[hud_type_field_name] = "text",
-		position = position,
-		scale = { x = 0.3, y = 0.3 },
-		number = 0xffffff,
-		alignment = { x = 1 },
-	})
-	self.mod = player:hud_add({
-		[hud_type_field_name] = "text",
-		position = position,
-		scale = { x = 0.3, y = 0.3 },
-		number = 0xff3c0a,
-		alignment = { x = 1 },
-		style = 2,
-	})
-	self.best_tool = player:hud_add({
-		[hud_type_field_name] = "image",
-		position = position,
-		scale = { x = 1, y = 1 },
-		alignment = { x = 1, y = 1 },
-	})
-	self.tool_in_hand = player:hud_add({
-		[hud_type_field_name] = "image",
-		position = position,
-		scale = { x = 1, y = 1 },
-		alignment = { x = 1, y = 1 },
-	})
 	self.pointed_thing = "ignore"
 	self.pointed_thing_pos = nil
 	self.lines = {}
@@ -80,13 +29,16 @@ function M.new(player, data)
 	self.possible_tools = {}
 	self.possible_tool_index = 1
 
+	self.frame = self:create_frame()
+	self.image = self:create_hud_image()
+	self.name = self:create_hud_text(0xffffff)
+	self.mod = self:create_hud_text(0xff3c0a, 2)
+	self.best_tool = self:create_hud_tool_image()
+	self.tool_in_hand = self:create_hud_tool_image()
+
 	local period = tonumber(minetest.settings:get("what_is_this_uwu_rate_of_change")) or 1.0
 	self.timer = M.classes.timer.new(period, function()
-		if #self.possible_tools == 0 then
-			return
-		end
-		self.possible_tool_index = (self.possible_tool_index % #self.possible_tools) + 1
-		self:show_possible_tools()
+		self:on_timer()
 	end)
 
 	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
@@ -98,6 +50,55 @@ function M.new(player, data)
 	end
 
 	return self
+end
+
+function M:on_timer()
+	if #self.possible_tools == 0 then
+		return
+	end
+	self.possible_tool_index = (self.possible_tool_index % #self.possible_tools) + 1
+	self:show_possible_tools()
+end
+
+function M:create_frame()
+	return M.classes.frame.new({
+		side = "wit_side.png",
+		center = "wit_center.png",
+		edge = "wit_edge.png",
+		position = self.position,
+		alignment = self.alignment,
+		offset = self.offset,
+		player = self.player,
+	})
+end
+
+function M:create_hud_image()
+	return self.player:hud_add({
+		[hud_type_field_name] = "image",
+		position = self.position,
+		alignment = { x = 1 },
+		scale = { x = 0.3, y = 0.3 },
+	})
+end
+
+function M:create_hud_text(color, style)
+	return self.player:hud_add({
+		[hud_type_field_name] = "text",
+		position = self.position,
+		scale = { x = 0.3, y = 0.3 },
+		number = color,
+		alignment = { x = 1 },
+		style = style,
+	})
+end
+
+function M:create_hud_tool_image()
+	return self.player:hud_add({
+		[hud_type_field_name] = "image",
+		position = self.position,
+		scale = { x = 1, y = 1 },
+		alignment = { x = 1, y = 1 },
+	})
 end
 
 function M:size(size, y_size, previously_hidden)
