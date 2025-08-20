@@ -1,6 +1,6 @@
-local entity_utils = {}
+local M = {}
 
-function entity_utils.inventorycube(img1, img2, img3)
+function M.inventorycube(img1, img2, img3)
 	if not img1 or not img2 or not img3 then
 		return ""
 	end
@@ -12,7 +12,7 @@ function entity_utils.inventorycube(img1, img2, img3)
 	return "[inventorycube{" .. table.concat(images, "{")
 end
 
-function entity_utils.get_node_tiles(node_name, node_thing_type)
+function M.get_node_tiles(node_name, node_thing_type)
 	if node_thing_type == "mob" then
 		return "wit_end.png", "craft_item", true
 	elseif node_thing_type == "item" then
@@ -75,11 +75,11 @@ function entity_utils.get_node_tiles(node_name, node_thing_type)
 			tile6 = tile6.name
 		end
 
-		return entity_utils.inventorycube(tile1, tile6, tile3), "node", node
+		return M.inventorycube(tile1, tile6, tile3), "node", node
 	end
 end
 
-function entity_utils.process_entity(entity, playerName)
+function M.process_entity(entity, playerName)
 	if not entity then
 		return nil
 	end
@@ -100,7 +100,7 @@ function entity_utils.process_entity(entity, playerName)
 	return nil, "nothing"
 end
 
-function entity_utils.get_pointed_thing(player)
+function M.get_pointed_thing(player)
 	local pname = player:get_player_name()
 	local player_props = player:get_properties()
 	local player_pos = player:get_pos() + vector.new(0, player_props.eye_height, 0) + player:get_eye_offset()
@@ -111,13 +111,23 @@ function entity_utils.get_pointed_thing(player)
 
 	local wielded_item = player:get_wielded_item()
 	local tool_range = wielded_item:get_definition().range or minetest.registered_items[""].range or 5
+	if minetest.get_modpath("mcl_gamemode") and mcl_gamemode then
+		local player_gamemode = mcl_gamemode.get_gamemode(player)
+		if minetest.get_modpath("mcl_meshhand") and mcl_meshhand then
+			if player_gamemode == "creative" then
+				tool_range = tonumber(minetest.settings:get("mcl_hand_range_creative")) or 10
+			else
+				tool_range = tonumber(minetest.settings:get("mcl_hand_range")) or 4.5
+			end
+		end
+	end
 	local end_pos = player_pos + look_dir * tool_range
 
 	local MAX_TIMES = 10
 	for i = 1, MAX_TIMES do
 		local start_pos = player_pos + look_dir * tool_range * (i / MAX_TIMES)
 		local entity = minetest.raycast(start_pos, end_pos, true, see_liquid):next()
-		local result, kind = entity_utils.process_entity(entity, pname)
+		local result, kind = M.process_entity(entity, pname)
 		if result then
 			return result, kind
 		end
@@ -126,4 +136,4 @@ function entity_utils.get_pointed_thing(player)
 	return nil, nil
 end
 
-return entity_utils
+return M

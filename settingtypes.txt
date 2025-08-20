@@ -4,11 +4,17 @@ what_is_this_uwu_itemname (Show technical itemname) bool false
 #If true, use spring to change the frame.
 what_is_this_uwu_spring (Spring for the frame) bool true
 
+#Change the color of the frame outline. Default #0d23e8
+what_is_this_uwu_frame_color (The hex code of the frame color) string #0d23e8
+
 #Use this to change the multiplier for the font size of the wielded item name
 what_is_this_uwu_text_multiplier (Multiplier for text size calculations) float 1.0 0.1 10
 
 #Rate of change for the tool icon in seconds. Default 1.0
 what_is_this_uwu_rate_of_change (Change for tool icon in seconds) float 1.0 0.1
+
+#The spring frequency. Default 5.0
+what_is_this_uwu_spring_frequency (The frequency of the spring) float 5.0 0.1 20
 
 [Positions, offsets and alignment]
 #Position X of the HUD; 0.5 is center. Default: 0.5
