@@ -41,11 +41,12 @@ function M.new(player, data)
 		self:on_timer()
 	end)
 
-	local tech = minetest.settings:get_bool("what_is_this_uwu_spring", true)
+	local tech = M.utils.settings.get_setting_or("spring", true)
 	if tech then
+		local spring_frequency = M.utils.settings.get_setting_or("spring_frequency", 5)
 		self.scale = {
-			x = M.classes.spring.new(0.8, 5, self.frame.scale.x),
-			y = M.classes.spring.new(0.8, 5, self.frame.scale.y),
+			x = M.classes.spring.new(0.8, spring_frequency, self.frame.scale.x),
+			y = M.classes.spring.new(0.8, spring_frequency, self.frame.scale.y),
 		}
 	end
 
@@ -69,6 +70,7 @@ function M:create_frame()
 		alignment = self.alignment,
 		offset = self.offset,
 		player = self.player,
+		color = M.utils.settings.get_setting_or("frame_color", "#0d23e8"),
 	})
 end
 

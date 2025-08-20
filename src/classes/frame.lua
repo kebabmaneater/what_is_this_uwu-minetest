@@ -42,15 +42,17 @@ function M.new(data)
 end
 
 function M:_init_hud_images(data)
+	local color = data.color or "#0d23e8"
+
 	return {
-		left = data.side,
-		right = data.side .. "^[transform4",
-		top = data.side .. "^[transform1",
-		bottom = data.side .. "^[transform3",
-		bottom_left = data.edge .. "^[transform6",
-		bottom_right = data.edge .. "^[transform2",
-		top_left = data.edge,
-		top_right = data.edge .. "^[transform3",
+		left = data.side .. "^[multiply:" .. color,
+		right = data.side .. "^[transform4" .. "^[multiply:" .. color,
+		top = data.side .. "^[transform1" .. "^[multiply:" .. color,
+		bottom = data.side .. "^[transform3" .. "^[multiply:" .. color,
+		bottom_left = data.edge .. "^[transform6" .. "^[multiply:" .. color,
+		bottom_right = data.edge .. "^[transform2" .. "^[multiply:" .. color,
+		top_left = data.edge .. "^[multiply:" .. color,
+		top_right = data.edge .. "^[transform3" .. "^[multiply:" .. color,
 		center = data.center,
 	}
 end
