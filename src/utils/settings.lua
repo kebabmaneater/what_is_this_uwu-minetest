@@ -9,6 +9,10 @@ function M.get_setting(name)
 	return minetest.settings:get("what_is_this_uwu_" .. name)
 end
 
+function M.get_bool(name, default)
+	return not not minetest.settings:get_bool("what_is_this_uwu_" .. name, default)
+end
+
 function M.apply_text_multiplier(size)
 	local mult = tonumber(minetest.settings:get("what_is_this_uwu_text_multiplier"))
 	if mult then
