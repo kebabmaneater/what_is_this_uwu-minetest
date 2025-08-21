@@ -41,7 +41,7 @@ function M.new(player, data)
 		self:on_timer()
 	end)
 
-	local tech = M.utils.settings.get_setting_or("spring", true)
+	local tech = M.utils.settings.get_bool("spring")
 	if tech then
 		local spring_frequency = M.utils.settings.get_setting_or("spring_frequency", 5)
 		self.scale = {
