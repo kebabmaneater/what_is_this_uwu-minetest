@@ -440,7 +440,7 @@ function M:show_possible_tools(options)
 			or ""
 	end
 
-	player:hud_change(self.best_tool, "text", texture)
+	player:hud_change(self.best_tool, "text", texture .. "^[resize:16x16")
 	local correct_tool_texture = (texture ~= "") and (correct_tool_in_hand and "wit_checkmark.png" or "wit_nope.png")
 		or ""
 	player:hud_change(self.tool_in_hand, "text", correct_tool_texture)
